@@ -19,7 +19,7 @@ Write-Host "Pushing to GitHub..." -ForegroundColor Yellow
 git -c http.sslVerify=false push "https://jianyi8377:$token@github.com/Jianyi8377/jianyi8377.github.io.git" main
 
 if ($LASTEXITCODE -eq 0) {
-    Write-Host "✅ Deployment successful! https://jianyi8377.github.io" -ForegroundColor Green
+    Write-Host "√ Deployment successful! https://jianyi8377.github.io" -ForegroundColor Green
 } else {
-    Write-Host "❌ Deployment failed!" -ForegroundColor Red
+    Write-Host "× Deployment failed!" -ForegroundColor Red
 }
