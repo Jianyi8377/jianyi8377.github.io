@@ -1,18 +1,39 @@
----
-layout: default  # 可选，若无布局文件可改为 layout: null
-title: 首页
----
-
-<!-- 以下是文章列表代码 -->
 <h3>我的文章列表</h3>
-<ul>
-	  {% for post in site.posts %}
-	      <li>
-		            <a href="{{ post.url }}">{{ post.title }}</a>
-			          <span style="color: #666; font-size: 0.8em;"> - {{ post.date | date: "%Y-%m-%d" }}</span>
-				      </li>
-				        {% empty %}
-					    <li>暂无文章</li>
-					      {% endfor %}
+<ul id="article-list">
+	  <!-- JS 自动生成链接 -->
 </ul>
+
+<script>
+	  // 手动维护你的 HTML 文章路径清单（新增文章时，在这里加一行即可）
+	  const articlePaths = [
+		      "jekyll/入门/1145/11/29/oooo.html",
+		      "jekyll/入门/2025/11/03/XXXX.html",
+		      // 新增文章示例："jekyll/入门/2025/11/06/新文章.html"
+		    ];
+
+	    // 自动生成文章标题（从路径提取，可自定义）
+	    function getArticleTitle(path) {
+		        // 从路径最后一段（文件名）提取标题，去掉 .html
+		        const fileName = path.split("/").pop();
+		        return fileName.replace(".html", "") + "（自定义标题可直接改这里）";
+		      }
+
+	    // 自动检测文件是否存在，并生成列表
+	    const articleList = document.getElementById("article-list");
+	    articlePaths.forEach(path => {
+		        // 验证文件是否存在
+		        fetch(path)
+		          .then(response => {
+				          if (response.ok) {
+						            // 生成列表项和链接
+						            const li = document.createElement("li");
+						            li.innerHTML = `<a href="${path}">${getArticleTitle(path)}</a>`;
+						            articleList.appendChild(li);
+						          } else {
+								            console.log(`文件不存在：${path}`);
+								          }
+				        })
+		          .catch(err => console.log(`错误：${path} 无法访问`));
+		      });
+</script>
 
