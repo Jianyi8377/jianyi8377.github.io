@@ -16,9 +16,7 @@
 
     /* 背景样式：柔和渐变+轻微纹理 */
     body {
-      /* 渐变背景：从浅蓝到浅紫 */
       background: linear-gradient(135deg, #f5f7fa 0%, #e4eaf5 100%);
-      /* 轻微纹理（低透明度，不干扰阅读） */
       background-image: url("https://picsum.photos/id/1048/1920/1080");
       background-blend-mode: overlay;
       background-size: cover;
@@ -35,7 +33,7 @@
       border-radius: 12px;
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
       padding: 3rem;
-      backdrop-filter: blur(8px); /* 毛玻璃效果 */
+      backdrop-filter: blur(8px);
     }
 
     /* 标题样式 */
@@ -139,6 +137,34 @@
       display: block;
     }
 
+    /* 音乐控制按钮样式 */
+    .music-control {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background-color: rgba(255, 255, 255, 0.9);
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      z-index: 100;
+    }
+
+    .music-control:hover {
+      transform: scale(1.1);
+      box-shadow: 0 5px 15px rgba(99, 102, 241, 0.2);
+    }
+
+    .music-control i {
+      font-size: 1.2rem;
+      color: #6366f1;
+    }
+
     /* 响应式适配（手机端） */
     @media (max-width: 768px) {
       .container {
@@ -155,39 +181,79 @@
       .article-title {
         font-size: 1.1rem;
       }
+      .music-control {
+        width: 45px;
+        height: 45px;
+        bottom: 1.5rem;
+        right: 1.5rem;
+      }
     }
   </style>
 </head>
 <body>
-  <!-- 半透明容器：承载所有内容，增强背景层次感 -->
+  <!-- 半透明容器：承载所有内容 -->
   <div class="container">
-    <!-- 标题区域 -->
     <div class="article-header">
       <h3>我的文章列表</h3>
     </div>
-
-    <!-- 文章列表 -->
     <ul class="article-list" id="article-list">
       <!-- JS 自动生成列表项 -->
     </ul>
   </div>
 
+  <!-- 音乐控制按钮 -->
+  <div class="music-control" id="musicBtn">
+    <<i class="fas fa-pause" id="musicIcon"></</i>
+  </div>
+
+  <!-- 音频播放器（隐藏） -->
+  <audio id="backgroundMusic" loop preload="auto">
+    <!-- 背景音乐链接：使用免费可商用的轻音乐，可替换为自己的音频链接 -->
+    <source src="https://cdn.bootcdn.net/ajax/libs/music-api/1.0.0/music/纯音乐/卡农(钢琴版).mp3" type="audio/mpeg">
+    您的浏览器不支持音频播放
+  </audio>
+
   <script>
-    // 手动维护 HTML 文章路径清单（新增文章时添加路径即可）
+    // 背景音乐控制逻辑
+    const music = document.getElementById("backgroundMusic");
+    const musicBtn = document.getElementById("musicBtn");
+    const musicIcon = document.getElementById("musicIcon");
+
+    // 页面加载后尝试自动播放（需用户交互后才能正常播放，浏览器安全限制）
+    window.addEventListener("DOMContentLoaded", () => {
+      // 尝试自动播放，失败则等待用户点击
+      music.play().catch(() => {
+        musicIcon.classList.replace("fa-pause", "fa-play");
+        musicBtn.title = "点击播放音乐";
+      });
+    });
+
+    // 点击按钮控制播放/暂停
+    musicBtn.addEventListener("click", () => {
+      if (music.paused) {
+        music.play();
+        musicIcon.classList.replace("fa-play", "fa-pause");
+        musicBtn.title = "点击暂停音乐";
+      } else {
+        music.pause();
+        musicIcon.classList.replace("fa-pause", "fa-play");
+        musicBtn.title = "点击播放音乐";
+      }
+    });
+
+    // 文章列表生成逻辑
     const articlePaths = [
       "jekyll/入门/1145/11/29/oooo.html",
       "jekyll/入门/2025/11/03/XXXX.html",
       // 新增示例："jekyll/入门/2025/11/06/新文章.html"
     ];
 
-    // 自定义文章标题（key：文件路径，value：自定义标题）
     const articleTitles = {
       "jekyll/入门/1145/11/29/oooo.html": "Jekyll 入门教程：从零开始搭建博客",
       "jekyll/入门/2025/11/03/XXXX.html": "Jekyll 文章编写技巧：Markdown 语法详解",
       // 新增文章需对应添加："路径": "标题"
     };
 
-    // 提取文件日期（从路径解析，或手动指定）
     function getArticleDate(path) {
       const pathParts = path.split("/");
       const year = pathParts[2];
@@ -196,10 +262,8 @@
       return `${year}-${month}-${day}`;
     }
 
-    // 生成文章列表
     const articleList = document.getElementById("article-list");
     if (articlePaths.length === 0) {
-      // 空列表提示
       articleList.innerHTML = `
         <li class="empty-tip">
           <<i class="fas fa-file-alt"></</i>
