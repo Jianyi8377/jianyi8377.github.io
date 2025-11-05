@@ -1,39 +1,234 @@
-<h3>我的文章列表</h3>
-<ul id="article-list">
-	  <!-- JS 自动生成链接 -->
-</ul>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>我的文章列表</title>
+  <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* 全局样式重置 */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
 
-<script>
-	  // 手动维护你的 HTML 文章路径清单（新增文章时，在这里加一行即可）
-	  const articlePaths = [
-		      "jekyll/入门/1145/11/29/oooo.html",
-		      "jekyll/入门/2025/11/03/XXXX.html",
-		      // 新增文章示例："jekyll/入门/2025/11/06/新文章.html"
-		    ];
+    /* 背景样式：柔和渐变+轻微纹理 */
+    body {
+      /* 渐变背景：从浅蓝到浅紫 */
+      background: linear-gradient(135deg, #f5f7fa 0%, #e4eaf5 100%);
+      /* 轻微纹理（低透明度，不干扰阅读） */
+      background-image: url("https://picsum.photos/id/1048/1920/1080");
+      background-blend-mode: overlay;
+      background-size: cover;
+      background-attachment: fixed;
+      padding: 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+      min-height: 100vh;
+    }
 
-	    // 自动生成文章标题（从路径提取，可自定义）
-	    function getArticleTitle(path) {
-		        // 从路径最后一段（文件名）提取标题，去掉 .html
-		        const fileName = path.split("/").pop();
-		        return fileName.replace(".html", "") + "（自定义标题可直接改这里）";
-		      }
+    /* 半透明容器：增强层次感 */
+    .container {
+      background-color: rgba(255, 255, 255, 0.85);
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      padding: 3rem;
+      backdrop-filter: blur(8px); /* 毛玻璃效果 */
+    }
 
-	    // 自动检测文件是否存在，并生成列表
-	    const articleList = document.getElementById("article-list");
-	    articlePaths.forEach(path => {
-		        // 验证文件是否存在
-		        fetch(path)
-		          .then(response => {
-				          if (response.ok) {
-						            // 生成列表项和链接
-						            const li = document.createElement("li");
-						            li.innerHTML = `<a href="${path}">${getArticleTitle(path)}</a>`;
-						            articleList.appendChild(li);
-						          } else {
-								            console.log(`文件不存在：${path}`);
-								          }
-				        })
-		          .catch(err => console.log(`错误：${path} 无法访问`));
-		      });
-</script>
+    /* 标题样式 */
+    .article-header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+      position: relative;
+      padding-bottom: 1rem;
+    }
 
+    .article-header h3 {
+      font-size: 2rem;
+      color: #2d3748;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    .article-header::after {
+      content: "";
+      display: block;
+      width: 60px;
+      height: 3px;
+      background-color: #6366f1;
+      margin: 1rem auto 0;
+      border-radius: 3px;
+    }
+
+    /* 文章列表容器 */
+    .article-list {
+      list-style: none;
+      gap: 1.2rem;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 列表项样式 */
+    .article-item {
+      background-color: rgba(255, 255, 255, 0.9);
+      padding: 1.5rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      transition: all 0.3s ease;
+      border-left: 4px solid transparent;
+    }
+
+    /* hover交互效果 */
+    .article-item:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 5px 15px rgba(99, 102, 241, 0.15);
+      border-left-color: #6366f1;
+    }
+
+    /* 文章链接样式 */
+    .article-link {
+      text-decoration: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .article-title {
+      font-size: 1.25rem;
+      color: #2d3748;
+      font-weight: 500;
+      transition: color 0.3s ease;
+    }
+
+    .article-item:hover .article-title {
+      color: #6366f1;
+    }
+
+    /* 日期标签样式 */
+    .article-date {
+      display: flex;
+      align-items: center;
+      color: #718096;
+      font-size: 0.9rem;
+      background-color: #f0f4ff;
+      padding: 0.3rem 0.8rem;
+      border-radius: 20px;
+    }
+
+    .article-date i {
+      margin-right: 0.3rem;
+      font-size: 0.8rem;
+      color: #6366f1;
+    }
+
+    /* 空列表提示样式 */
+    .empty-tip {
+      text-align: center;
+      padding: 3rem;
+      color: #718096;
+      font-size: 1.1rem;
+    }
+
+    .empty-tip i {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+      color: #cbd5e0;
+      display: block;
+    }
+
+    /* 响应式适配（手机端） */
+    @media (max-width: 768px) {
+      .container {
+        padding: 1.5rem;
+      }
+      .article-link {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+      }
+      .article-header h3 {
+        font-size: 1.7rem;
+      }
+      .article-title {
+        font-size: 1.1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- 半透明容器：承载所有内容，增强背景层次感 -->
+  <div class="container">
+    <!-- 标题区域 -->
+    <div class="article-header">
+      <h3>我的文章列表</h3>
+    </div>
+
+    <!-- 文章列表 -->
+    <ul class="article-list" id="article-list">
+      <!-- JS 自动生成列表项 -->
+    </ul>
+  </div>
+
+  <script>
+    // 手动维护 HTML 文章路径清单（新增文章时添加路径即可）
+    const articlePaths = [
+      "jekyll/入门/1145/11/29/oooo.html",
+      "jekyll/入门/2025/11/03/XXXX.html",
+      // 新增示例："jekyll/入门/2025/11/06/新文章.html"
+    ];
+
+    // 自定义文章标题（key：文件路径，value：自定义标题）
+    const articleTitles = {
+      "jekyll/入门/1145/11/29/oooo.html": "Jekyll 入门教程：从零开始搭建博客",
+      "jekyll/入门/2025/11/03/XXXX.html": "Jekyll 文章编写技巧：Markdown 语法详解",
+      // 新增文章需对应添加："路径": "标题"
+    };
+
+    // 提取文件日期（从路径解析，或手动指定）
+    function getArticleDate(path) {
+      const pathParts = path.split("/");
+      const year = pathParts[2];
+      const month = pathParts[3];
+      const day = pathParts[4];
+      return `${year}-${month}-${day}`;
+    }
+
+    // 生成文章列表
+    const articleList = document.getElementById("article-list");
+    if (articlePaths.length === 0) {
+      // 空列表提示
+      articleList.innerHTML = `
+        <li class="empty-tip">
+          <<i class="fas fa-file-alt"></</i>
+          暂无文章，快去添加吧！
+        </li>
+      `;
+    } else {
+      articlePaths.forEach(path => {
+        fetch(path)
+          .then(response => {
+            if (response.ok) {
+              const title = articleTitles[path] || path.split("/").pop().replace(".html", "");
+              const date = getArticleDate(path);
+              const li = document.createElement("li");
+              li.className = "article-item";
+              li.innerHTML = `
+                <a href="${path}" class="article-link">
+                  <span class="article-title">${title}</span>
+                  <span class="article-date"><<i class="far fa-calendar-alt"></</i>${date}</span>
+                </a>
+              `;
+              articleList.appendChild(li);
+            } else {
+              console.log(`文件不存在：${path}`);
+            }
+          })
+          .catch(err => console.log(`访问错误：${path}`));
+      });
+    }
+  </script>
+</body>
+</html>
