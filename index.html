@@ -1,6 +1,11 @@
 <h3>我的文章列表</h3>
 <ul>
-	  <li><a href="jekyll/入门/1145/11/29/oooo.html">第一篇文章</a></li>
-	    <li><a href="jekyll/入门/2025/11/03/XXXX.html">第二篇文章</a></li>
+	  {% for post in site.posts %} <!-- 遍历所有文章，按发布时间倒序排列 -->
+	      <li>
+		            <a href="{{ post.url }}">{{ post.title }}</a> <!-- 自动生成文章链接和标题 -->
+			          <!-- 可选：添加发布时间 -->
+				        <span style="color:#666; font-size:0.8em;"> - {{ post.date | date: "%Y-%m-%d" }}</span>
+					    </li>
+					      {% endfor %}
 </ul>
 
