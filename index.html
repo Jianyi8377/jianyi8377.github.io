@@ -1,11 +1,18 @@
+---
+layout: default  # 可选，若无布局文件可改为 layout: null
+title: 首页
+---
+
+<!-- 以下是文章列表代码 -->
 <h3>我的文章列表</h3>
 <ul>
-	  {% for post in site.posts %} <!-- 遍历所有文章，按发布时间倒序排列 -->
+	  {% for post in site.posts %}
 	      <li>
-		            <a href="{{ post.url }}">{{ post.title }}</a> <!-- 自动生成文章链接和标题 -->
-			          <!-- 可选：添加发布时间 -->
-				        <span style="color:#666; font-size:0.8em;"> - {{ post.date | date: "%Y-%m-%d" }}</span>
-					    </li>
+		            <a href="{{ post.url }}">{{ post.title }}</a>
+			          <span style="color: #666; font-size: 0.8em;"> - {{ post.date | date: "%Y-%m-%d" }}</span>
+				      </li>
+				        {% empty %}
+					    <li>暂无文章</li>
 					      {% endfor %}
 </ul>
 
