@@ -1,0 +1,19 @@
+---
+layout: default
+title: 我的自定义首页
+---
+
+<div class="container">
+  <h1>欢迎来到我的博客</h1>
+  
+  <!-- 自动生成文章列表 -->
+  <h2>最新文章</h2>
+  <ul>
+    {% for post in site.posts %}
+      <li>
+        <a href="{{ post.url }}">{{ post.title }}</a>  <!-- 自动获取文章链接 -->
+        <small>{{ post.date | date: "%Y-%m-%d" }}</small>
+      </li>
+    {% endfor %}
+  </ul>
+</div>
