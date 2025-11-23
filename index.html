@@ -45,7 +45,49 @@ title: Sharing And Coding
     background: linear-gradient(to right, transparent, #ccc, transparent); /* 渐变分割线 */
     margin: 25px 0;
   }
+
+  /* 音乐控制按钮样式（悬浮固定在右下角） */
+  .music-control {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4);
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999; /* 确保按钮在最上层 */
+  }
+
+  .music-control:hover {
+    background-color: #2980b9;
+    transform: scale(1.1); /*  hover 时放大 */
+  }
+
+  /* 隐藏默认音频控件 */
+  audio {
+    display: none;
+  }
 </style>
+
+<!-- 背景音乐核心组件 -->
+<audio id="bgm" autoplay muted loop preload="auto">
+  <source src="/music/bgm.mp3" type="audio/mpeg"> <!-- 音乐文件路径（需按实际调整） -->
+  <p>你的浏览器不支持音频播放，请升级浏览器。</p>
+</audio>
+
+<!-- 音乐控制按钮（暂停/播放切换） -->
+<button class="music-control" id="musicBtn">
+  ▶️ <!-- 初始显示播放图标（因静音自动播放，视觉上显示为「播放中」，实际可点击暂停） -->
+</button>
 
 <div class="container">
   <h1>花径不曾缘客扫，蓬门今始为君开</h1>
@@ -62,3 +104,47 @@ title: Sharing And Coding
     {% endfor %}
   </ul>
 </div>
+
+<script>
+// 音乐控制逻辑
+const bgm = document.getElementById('bgm');
+const musicBtn = document.getElementById('musicBtn');
+let isPlaying = true; // 初始状态：播放中（静音）
+
+// 页面加载后自动取消静音（部分浏览器需用户交互，这里做兼容）
+window.addEventListener('load', () => {
+  // 尝试取消静音（若浏览器拦截，用户点击按钮时再处理）
+  bgm.muted = false;
+  // 更新按钮图标（播放中显示「暂停」）
+  musicBtn.innerHTML = "⏸️";
+});
+
+// 按钮点击事件：切换播放/暂停 + 静音/取消静音
+musicBtn.addEventListener('click', () => {
+  if (isPlaying) {
+    // 当前播放中 → 暂停
+    bgm.pause();
+    musicBtn.innerHTML = "▶️"; // 图标切换为播放
+  } else {
+    // 当前暂停 → 播放（同时取消静音）
+    bgm.play().then(() => {
+      bgm.muted = false;
+      musicBtn.innerHTML = "⏸️"; // 图标切换为暂停
+    }).catch(err => {
+      // 若浏览器拦截播放（如 Safari），提示用户点击页面后重试
+      alert("音频播放需要你的授权，请点击页面任意位置后再试～");
+    });
+  }
+  isPlaying = !isPlaying; // 状态反转
+});
+
+// 兼容 Safari 等严格限制自动播放的浏览器：用户点击页面后激活音频
+document.addEventListener('click', () => {
+  if (!bgm.paused) return; // 已在播放则无需处理
+  bgm.play().then(() => {
+    bgm.muted = false;
+    musicBtn.innerHTML = "⏸️";
+    isPlaying = true;
+  }).catch(err => console.log('播放授权失败：', err));
+}, { once: true }); // 只执行一次
+</script>
