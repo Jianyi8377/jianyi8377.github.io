@@ -78,9 +78,9 @@ title: Sharing And Coding
   }
 </style>
 
-<!-- 背景音乐核心组件（移除 autoplay，避免自动播放和手动控制冲突） -->
+<!-- 背景音乐核心组件 -->
 <audio id="bgm" loop preload="auto">
-  <source src="/music/我的一个道姑朋友.mp3" type="audio/mpeg"> <!-- 替换为你的正确路径 -->
+  <source src="/music/我的一个道姑朋友.mp3" type="audio/mpeg"> <!-- 确保路径正确！ -->
   <p>你的浏览器不支持音频播放，请升级浏览器。</p>
 </audio>
 
@@ -106,27 +106,27 @@ title: Sharing And Coding
 </div>
 
 <script>
-// 音乐控制逻辑（简化冲突逻辑，优先用户交互）
+// 音乐控制逻辑（修复状态反转错误）
 const bgm = document.getElementById('bgm');
 const musicBtn = document.getElementById('musicBtn');
 let isPlaying = false; // 初始状态：未播放
 
-// 核心：用户点击按钮才触发播放/暂停（避免自动播放冲突）
+// 核心：用户点击按钮切换播放/暂停
 musicBtn.addEventListener('click', async () => {
   if (isPlaying) {
     // 播放中 → 暂停
     bgm.pause();
     musicBtn.innerHTML = "▶️";
+    isPlaying = false; // 手动设置为未播放状态
   } else {
-    // 未播放 → 尝试播放（处理浏览器授权）
+    // 未播放 → 尝试播放
     try {
-      // 先取消静音，再播放
       bgm.muted = false;
       await bgm.play(); // 等待播放成功
       musicBtn.innerHTML = "⏸️";
-      isPlaying = true;
+      isPlaying = true; // 手动设置为播放状态
     } catch (err) {
-      // 授权失败时，提示用户点击页面任意位置（激活浏览器音频权限）
+      // 授权失败时，提示用户点击页面任意位置后重试
       alert("音频播放需要你的授权，请点击页面任意位置后再点击播放按钮～");
       // 监听一次页面点击，激活权限后自动播放
       document.addEventListener('click', async () => {
@@ -137,12 +137,11 @@ musicBtn.addEventListener('click', async () => {
       }, { once: true });
     }
   }
-  isPlaying = !isPlaying;
 });
 
-// 额外兼容：用户可能先点击页面其他地方，提前激活音频权限
+// 额外兼容：用户先点击页面其他地方，提前激活音频权限
 document.addEventListener('click', async () => {
-  if (isPlaying || bgm.paused === false) return; // 已播放则跳过
+  if (isPlaying || !bgm.paused) return; // 已播放则跳过
   try {
     await bgm.play();
     bgm.muted = false;
