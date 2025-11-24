@@ -17,7 +17,7 @@
 
   <!-- 音乐播放器组件（公共部分，所有页面都有） -->
   <style>
-    /* 音乐组件样式（优先级拉满，避免冲突） */
+    /* 音乐组件样式（保持不变） */
     .music-container {
       position: fixed;
       bottom: 20px;
@@ -116,7 +116,6 @@
       margin-top: 5px;
     }
     audio { display: none !important; }
-    /* 响应式优化 */
     @media (max-width: 768px) {
       .music-container { bottom: 15px; right: 15px; }
       .music-control { width: 55px; height: 55px; font-size: 22px; }
@@ -149,7 +148,7 @@
   </div>
 
   <script>
-    // 歌曲配置（唯一一份，避免重复）
+    // 歌曲配置（唯一一份）
     let musicList = [
       { name: "我的一个道姑朋友", url: "/music/我的一个道姑朋友.mp3" },
       { name: "童年", url: "/music/童年.mp3" },
@@ -169,7 +168,50 @@
     let isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     let isDragging = false;
 
-    // 初始化播放器
+    // 保存播放状态到本地存储
+    function savePlayState() {
+      localStorage.setItem('musicIsPlaying', isPlaying);
+      localStorage.setItem('musicCurrentIndex', currentMusicIndex);
+      localStorage.setItem('musicCurrentTime', bgm.currentTime);
+      // 标记用户已交互（关键：告诉浏览器用户有过操作）
+      localStorage.setItem('userInteracted', 'true');
+    }
+
+    // 从本地存储恢复播放状态 + 自动播放
+    function restoreAndAutoPlay() {
+      const savedIsPlaying = localStorage.getItem('musicIsPlaying') === 'true';
+      const savedIndex = parseInt(localStorage.getItem('musicCurrentIndex'));
+      const savedTime = parseFloat(localStorage.getItem('musicCurrentTime'));
+      const userInteracted = localStorage.getItem('userInteracted') === 'true';
+
+      // 验证保存的索引是否有效
+      if (!isNaN(savedIndex) && savedIndex >= 0 && savedIndex < musicList.length) {
+        currentMusicIndex = savedIndex;
+        bgm.src = musicList[currentMusicIndex].url;
+      }
+
+      // 音频元数据加载完成后，恢复进度并自动播放
+      bgm.addEventListener('loadedmetadata', () => {
+        if (!isNaN(savedTime) && savedTime > 0 && savedTime < bgm.duration) {
+          bgm.currentTime = savedTime; // 恢复播放进度
+        }
+        updateProgress();
+
+        // 关键：用户之前有过交互 + 之前是播放中 → 自动续播
+        if (savedIsPlaying && userInteracted) {
+          bgm.play().catch(err => {
+            console.log('自动续播失败（需用户再次交互）：', err);
+            musicBtn.innerHTML = "▶️";
+            isPlaying = false;
+            savePlayState();
+          });
+          musicBtn.innerHTML = "⏸️";
+          isPlaying = true;
+        }
+      });
+    }
+
+    // 初始化播放器（原有逻辑 + 自动续播）
     function initMusicPlayer() {
       if (musicList.length === 0) {
         musicListEl.innerHTML = '<div class="no-music-tip">暂无歌曲</div>';
@@ -214,17 +256,38 @@
       document.addEventListener('touchmove', drag, { passive: false });
       document.addEventListener('touchend', endDrag);
 
-      // 音频事件
-      bgm.addEventListener('timeupdate', updateProgress);
+      // 音频事件（原有逻辑 + 保存状态）
+      bgm.addEventListener('timeupdate', () => {
+        updateProgress();
+        if (isPlaying && Math.floor(bgm.currentTime) % 3 === 0) {
+          savePlayState();
+        }
+      });
       bgm.addEventListener('loadedmetadata', updateProgress);
-      bgm.addEventListener('ended', nextSong);
+      bgm.addEventListener('ended', () => {
+        if (musicList.length > 1) nextSong();
+        savePlayState();
+      });
       bgm.addEventListener('error', () => {
         alert(`歌曲 "${musicList[currentMusicIndex].name}" 加载失败，请检查路径！`);
-        nextSong();
+        if (musicList.length > 1) nextSong();
+        savePlayState();
       });
+
+      // 关键：页面加载时恢复状态并尝试自动播放
+      restoreAndAutoPlay();
+
+      // 额外：首次访问时，监听用户任意交互（激活自动播放权限）
+      if (!localStorage.getItem('userInteracted')) {
+        document.addEventListener('click', () => {
+          localStorage.setItem('userInteracted', 'true');
+          // 若用户首次点击页面，且之前想播放 → 触发播放
+          if (isPlaying) bgm.play().catch(() => {});
+        }, { once: true });
+      }
     }
 
-    // 播放/暂停
+    // 播放/暂停（原有逻辑 + 保存状态）
     function togglePlay() {
       if (musicList.length === 0) return;
       if (isPlaying) {
@@ -232,19 +295,21 @@
         musicBtn.innerHTML = "▶️";
       } else {
         bgm.play().catch(err => {
-          alert('需点击页面授权音频，授权后再点播放～');
+          alert('需点击页面授权音频，授权后自动播放～');
           document.addEventListener('click', () => {
             bgm.play().catch(() => {});
             musicBtn.innerHTML = "⏸️";
             isPlaying = true;
+            savePlayState();
           }, { once: true });
         });
         musicBtn.innerHTML = "⏸️";
       }
       isPlaying = !isPlaying;
+      savePlayState();
     }
 
-    // 切换歌曲
+    // 切换歌曲（原有逻辑 + 保存状态）
     function switchMusic(index) {
       currentMusicIndex = index;
       bgm.src = musicList[currentMusicIndex].url;
@@ -252,16 +317,17 @@
         item.classList.toggle('active', i === index);
       });
       if (isPlaying) bgm.play();
+      savePlayState();
     }
 
-    // 下一首
+    // 下一首（原有逻辑不变）
     function nextSong() {
       if (musicList.length <= 1) return;
       currentMusicIndex = (currentMusicIndex + 1) % musicList.length;
       switchMusic(currentMusicIndex);
     }
 
-    // 进度条更新
+    // 进度条更新（原有逻辑不变）
     function updateProgress() {
       if (isNaN(bgm.duration)) return;
       const percent = (bgm.currentTime / bgm.duration) * 100;
@@ -270,14 +336,14 @@
       totalTimeEl.textContent = formatTime(bgm.duration);
     }
 
-    // 时间格式化
+    // 时间格式化（原有逻辑不变）
     function formatTime(seconds) {
       const mins = Math.floor(seconds / 60);
       const secs = Math.floor(seconds % 60);
       return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     }
 
-    // 拖动进度条
+    // 拖动进度条（原有逻辑 + 保存状态）
     function startDrag(e) {
       if (isNaN(bgm.duration)) return;
       isDragging = true;
@@ -287,7 +353,10 @@
     function drag(e) {
       if (isDragging && !isNaN(bgm.duration)) updateProgressFromEvent(e);
     }
-    function endDrag() { isDragging = false; }
+    function endDrag() {
+      isDragging = false;
+      savePlayState();
+    }
     function updateProgressFromEvent(e) {
       const rect = progressBar.getBoundingClientRect();
       const clientX = e.touches ? e.touches[0].clientX : e.clientX;
@@ -299,6 +368,9 @@
 
     // 页面加载初始化
     window.addEventListener('load', initMusicPlayer);
+
+    // 页面关闭/刷新时强制保存状态
+    window.addEventListener('beforeunload', savePlayState);
   </script>
 
 </body>
