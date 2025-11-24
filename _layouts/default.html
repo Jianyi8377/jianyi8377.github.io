@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="{{ page.lang | default: site.lang | default: "en" }}">
+
+{%- include head.html -%}
+
+<body>
+
+  {%- include header.html -%}
+
+  <main class="page-content" aria-label="Content">
+    <div class="wrapper">
+      {{ content }}
+    </div>
+  </main>
+
+  {%- include footer.html -%}
+
+  <!-- 音乐播放器组件 -->
+  <style>
+    /* --- 音乐组件样式 --- */
+    .music-container {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+    .music-control {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background-color: #3498db;
+      color: white;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4);
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .music-control:hover, .music-control.active {
+      background-color: #2980b9;
+      transform: scale(1.1);
+    }
+    .progress-container {
+      width: 280px;
+      background-color: rgba(255, 255, 255, 0.98);
+      border-radius: 10px 10px 0 0;
+      padding: 10px 15px;
+      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+      margin-bottom: 5px;
+      display: none;
+    }
+    .music-list {
+      width: 280px;
+      background-color: rgba(255, 255, 255, 0.98);
+      border-radius: 0 0 10px 10px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+      padding: 15px;
+      max-height: 300px;
+      overflow-y: auto;
+      display: none;
+      margin-bottom: 5px;
+    }
+    .music-container.show .progress-container,
+    .music-container.show .music-list {
+      display: block;
+    }
+    .music-list-title {
+      color: #2c3e50;
+      font-size: 0.9em;
+      margin-bottom: 10px;
+      padding-bottom: 5px;
+      border-bottom: 1px solid #eee;
+    }
+    .music-item {
+      padding: 8px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      font-size: 0.9em;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      touch-action: manipulation;
+    }
+    .music-item:hover, .music-item.active {
+      background-color: #e3f2fd;
+      color: #2980b9;
+      font-weight: 500;
+    }
+    .no-music-tip {
+      color: #7f8c8d;
+      font-size: 0.9em;
+      text-align: center;
+      padding: 15px 0;
+    }
+    .progress-bar {
+      width: 100%;
+      height: 6px;
+      background-color: #eee;
+      border-radius: 3px;
+      cursor: pointer;
+      position: relative;
+      touch-action: manipulation;
+    }
+    .progress-fill {
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 100%;
+      background-color: #3498db;
+      border-radius: 3px;
+      width: 0%;
+    }
+    .time-display {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75em;
+      color: #7f8c8d;
+      margin-top: 5px;
+    }
+    audio { display: none; }
+    /* --- 响应式设计 --- */
+    @media (max-width: 768px) {
+      .music-container { bottom: 15px; right: 15px; }
+      .music-control { width: 55px; height: 55px; font-size: 22px; }
+      .music-list, .progress-container { width: 260px; }
+    }
+    @media (max-width: 480px) {
+      .music-list, .progress-container { width: 240px; max-height: 250px; }
+    }
+  </style>
+
+  <audio id="bgm" loop preload="auto">
+    <source src="/music/我的一个道姑朋友.mp3" type="audio/mpeg">
+    <p>你的浏览器不支持音频播放，请升级浏览器。</p>
+  </audio>
+
+  <div class="music-container" id="musicContainer">
+    <div class="progress-container" id="progressContainer">
+      <div class="progress-bar" id="progressBar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <div class="time-display">
+        <span id="currentTime">00:00</span>
+        <span id="totalTime">00:00</span>
+      </div>
+    </div>
+    <div class="music-list" id="musicList">
+      <div class="music-list-title">歌曲列表</div>
+    </div>
+    <button class="music-control" id="musicBtn">▶️</button>
+  </div>
+
+  <script>
+    // 歌曲列表配置
+    const musicList = [
+      { name: "我的一个道姑朋友", url: "/music/我的一个道姑朋友.mp3" },
+      { name: "童年", url: "/music/童年.mp3" },
+      // 在这里添加更多歌曲...
+    ];
+
+    // DOM 元素
+    const bgm = document.getElementById('bgm');
+    const musicBtn = document.getElementById('musicBtn');
+    const musicContainer = document.getElementById('musicContainer');
+    const musicListEl = document.getElementById('musicList');
+    const progressContainer = document.getElementById('progressContainer');
+    const progressBar = document.getElementById('progressBar');
+    const progressFill = document.getElementById('progressFill');
+    const currentTimeEl = document.getElementById('currentTime');
+    const totalTimeEl = document.getElementById('totalTime');
+
+    let isPlaying = false;
+    let currentMusicIndex = 0;
+    let isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    let isDragging = false;
+
+    // 初始化
+    function initMusicPlayer() {
+      if (musicList.length === 0) {
+        musicListEl.innerHTML = '<div class="no-music-tip">暂无歌曲</div>';
+        musicBtn.disabled = true;
+        musicBtn.style.backgroundColor = '#bdc3c7';
+        return;
+      }
+
+      // 生成歌曲列表
+      let listHtml = '<div class="music-list-title">歌曲列表</div>';
+      musicList.forEach((music, index) => {
+        listHtml += `<div class="music-item ${index === currentMusicIndex ? 'active' : ''}" data-index="${index}">${music.name}</div>`;
+      });
+      musicListEl.innerHTML = listHtml;
+
+      // 设置初始歌曲
+      bgm.src = musicList[currentMusicIndex].url;
+
+      // 绑定事件
+      document.querySelectorAll('.music-item').forEach(item => {
+        item.addEventListener('click', () => switchMusic(parseInt(item.dataset.index)));
+      });
+    }
+
+    // 切换歌曲
+    function switchMusic(index) {
+      currentMusicIndex = index;
+      bgm.src = musicList[currentMusicIndex].url;
+
+      document.querySelectorAll('.music-item').forEach((item, i) => {
+        item.classList.toggle('active', i === index);
+      });
+
+      if (isPlaying) {
+        bgm.play().catch(handleAudioError);
+      }
+    }
+
+    // 播放/暂停控制
+    function togglePlay() {
+      if (musicList.length === 0) return;
+
+      if (isPlaying) {
+        bgm.pause();
+        musicBtn.innerHTML = "▶️";
+      } else {
+        bgm.play().catch(handleAudioError);
