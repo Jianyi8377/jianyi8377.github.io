@@ -9,20 +9,20 @@
 
   <main class="page-content" aria-label="Content">
     <div class="wrapper">
-      {{ content }}
+      {{ content }} <!-- 这里渲染你的MD文章内容，不会被覆盖 -->
     </div>
   </main>
 
   {%- include footer.html -%}
 
-  <!-- 音乐播放器组件 -->
+  <!-- 音乐播放器组件（完整无缺失） -->
   <style>
-    /* --- 音乐组件样式 --- */
+    /* 音乐组件样式 - 提高优先级，避免冲突 */
     .music-container {
       position: fixed;
       bottom: 20px;
       right: 20px;
-      z-index: 9999;
+      z-index: 9999 !important; /* 确保在最上层，不被遮挡 */
       display: flex;
       flex-direction: column;
       align-items: flex-end;
@@ -33,9 +33,9 @@
       border-radius: 50%;
       background-color: #3498db;
       color: white;
-      border: none;
+      border: none !important;
       font-size: 20px;
-      cursor: pointer;
+      cursor: pointer !important;
       box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4);
       transition: all 0.3s ease;
       display: flex;
@@ -88,7 +88,6 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      touch-action: manipulation;
     }
     .music-item:hover, .music-item.active {
       background-color: #e3f2fd;
@@ -108,7 +107,6 @@
       border-radius: 3px;
       cursor: pointer;
       position: relative;
-      touch-action: manipulation;
     }
     .progress-fill {
       position: absolute;
@@ -126,8 +124,8 @@
       color: #7f8c8d;
       margin-top: 5px;
     }
-    audio { display: none; }
-    /* --- 响应式设计 --- */
+    audio { display: none !important; }
+    /* 响应式优化 */
     @media (max-width: 768px) {
       .music-container { bottom: 15px; right: 15px; }
       .music-control { width: 55px; height: 55px; font-size: 22px; }
@@ -138,11 +136,13 @@
     }
   </style>
 
-  <audio id="bgm" loop preload="auto">
+  <!-- 音频核心 -->
+  <audio id="bgm" loop preload="metadata">
     <source src="/music/我的一个道姑朋友.mp3" type="audio/mpeg">
     <p>你的浏览器不支持音频播放，请升级浏览器。</p>
   </audio>
 
+  <!-- 音乐容器 -->
   <div class="music-container" id="musicContainer">
     <div class="progress-container" id="progressContainer">
       <div class="progress-bar" id="progressBar">
@@ -159,20 +159,19 @@
     <button class="music-control" id="musicBtn">▶️</button>
   </div>
 
+  <!-- 完整JS - 修复按钮绑定 -->
   <script>
-    // 歌曲列表配置
+    // 歌曲配置（确保路径正确）
     const musicList = [
       { name: "我的一个道姑朋友", url: "/music/我的一个道姑朋友.mp3" },
       { name: "童年", url: "/music/童年.mp3" },
-      // 在这里添加更多歌曲...
     ];
 
-    // DOM 元素
+    // DOM元素
     const bgm = document.getElementById('bgm');
     const musicBtn = document.getElementById('musicBtn');
     const musicContainer = document.getElementById('musicContainer');
     const musicListEl = document.getElementById('musicList');
-    const progressContainer = document.getElementById('progressContainer');
     const progressBar = document.getElementById('progressBar');
     const progressFill = document.getElementById('progressFill');
     const currentTimeEl = document.getElementById('currentTime');
@@ -183,7 +182,7 @@
     let isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     let isDragging = false;
 
-    // 初始化
+    // 初始化播放器
     function initMusicPlayer() {
       if (musicList.length === 0) {
         musicListEl.innerHTML = '<div class="no-music-tip">暂无歌曲</div>';
@@ -199,30 +198,49 @@
       });
       musicListEl.innerHTML = listHtml;
 
-      // 设置初始歌曲
-      bgm.src = musicList[currentMusicIndex].url;
-
-      // 绑定事件
+      // 绑定歌曲点击事件
       document.querySelectorAll('.music-item').forEach(item => {
         item.addEventListener('click', () => switchMusic(parseInt(item.dataset.index)));
       });
-    }
 
-    // 切换歌曲
-    function switchMusic(index) {
-      currentMusicIndex = index;
-      bgm.src = musicList[currentMusicIndex].url;
+      // 绑定按钮点击事件（核心：之前可能漏了这步）
+      musicBtn.addEventListener('click', togglePlay);
 
-      document.querySelectorAll('.music-item').forEach((item, i) => {
-        item.classList.toggle('active', i === index);
-      });
-
-      if (isPlaying) {
-        bgm.play().catch(handleAudioError);
+      // 绑定列表显示逻辑
+      if (isMobile) {
+        musicBtn.addEventListener('click', () => {
+          setTimeout(() => musicContainer.classList.toggle('show'), 100);
+        });
+        // 点击外部关闭列表
+        document.addEventListener('click', (e) => {
+          if (!musicContainer.contains(e.target) && musicContainer.classList.contains('show')) {
+            musicContainer.classList.remove('show');
+          }
+        });
+      } else {
+        musicContainer.addEventListener('mouseenter', () => musicContainer.classList.add('show'));
+        musicContainer.addEventListener('mouseleave', () => musicContainer.classList.remove('show'));
       }
+
+      // 进度条事件
+      progressBar.addEventListener('mousedown', startDrag);
+      document.addEventListener('mousemove', drag);
+      document.addEventListener('mouseup', endDrag);
+      progressBar.addEventListener('touchstart', startDrag, { passive: false });
+      document.addEventListener('touchmove', drag, { passive: false });
+      document.addEventListener('touchend', endDrag);
+
+      // 音频事件
+      bgm.addEventListener('timeupdate', updateProgress);
+      bgm.addEventListener('loadedmetadata', updateProgress);
+      bgm.addEventListener('ended', nextSong);
+      bgm.addEventListener('error', () => {
+        alert(`歌曲 "${musicList[currentMusicIndex].name}" 加载失败，请检查路径是否正确！`);
+        nextSong();
+      });
     }
 
-    // 播放/暂停控制
+    // 播放/暂停（修复权限问题）
     function togglePlay() {
       if (musicList.length === 0) return;
 
@@ -230,4 +248,77 @@
         bgm.pause();
         musicBtn.innerHTML = "▶️";
       } else {
-        bgm.play().catch(handleAudioError);
+        // 处理浏览器音频权限
+        bgm.play().catch(err => {
+          alert('需要先点击页面任意位置授权音频播放，授权后再点击播放器按钮～');
+          // 授权后自动播放
+          document.addEventListener('click', () => {
+            bgm.play().catch(() => {});
+            musicBtn.innerHTML = "⏸️";
+            isPlaying = true;
+          }, { once: true });
+        });
+        musicBtn.innerHTML = "⏸️";
+      }
+      isPlaying = !isPlaying;
+    }
+
+    // 切换歌曲
+    function switchMusic(index) {
+      currentMusicIndex = index;
+      bgm.src = musicList[currentMusicIndex].url;
+      document.querySelectorAll('.music-item').forEach((item, i) => {
+        item.classList.toggle('active', i === index);
+      });
+      if (isPlaying) bgm.play();
+    }
+
+    // 下一首
+    function nextSong() {
+      if (musicList.length <= 1) return;
+      currentMusicIndex = (currentMusicIndex + 1) % musicList.length;
+      switchMusic(currentMusicIndex);
+    }
+
+    // 更新进度条
+    function updateProgress() {
+      if (isNaN(bgm.duration)) return;
+      const percent = (bgm.currentTime / bgm.duration) * 100;
+      progressFill.style.width = `${percent}%`;
+      currentTimeEl.textContent = formatTime(bgm.currentTime);
+      totalTimeEl.textContent = formatTime(bgm.duration);
+    }
+
+    // 时间格式化
+    function formatTime(seconds) {
+      const mins = Math.floor(seconds / 60);
+      const secs = Math.floor(seconds % 60);
+      return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    // 拖动进度条
+    function startDrag(e) {
+      if (isNaN(bgm.duration)) return;
+      isDragging = true;
+      updateProgressFromEvent(e);
+      e.preventDefault();
+    }
+    function drag(e) {
+      if (isDragging && !isNaN(bgm.duration)) updateProgressFromEvent(e);
+    }
+    function endDrag() { isDragging = false; }
+    function updateProgressFromEvent(e) {
+      const rect = progressBar.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const relativeX = Math.max(0, Math.min(clientX - rect.left, rect.width));
+      const percent = relativeX / rect.width;
+      bgm.currentTime = percent * bgm.duration;
+      updateProgress();
+    }
+
+    // 页面加载完成后初始化（确保按钮绑定生效）
+    window.addEventListener('load', initMusicPlayer);
+  </script>
+
+</body>
+</html>
