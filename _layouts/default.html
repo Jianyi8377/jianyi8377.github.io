@@ -9,20 +9,20 @@
 
   <main class="page-content" aria-label="Content">
     <div class="wrapper">
-      {{ content }} <!-- 这里渲染你的MD文章内容，不会被覆盖 -->
+      {{ content }} <!-- 嵌入页面内容（首页/文章），不会被覆盖 -->
     </div>
   </main>
 
   {%- include footer.html -%}
 
-  <!-- 音乐播放器组件（完整无缺失） -->
+  <!-- 音乐播放器组件（公共部分，所有页面都有） -->
   <style>
-    /* 音乐组件样式 - 提高优先级，避免冲突 */
+    /* 音乐组件样式（优先级拉满，避免冲突） */
     .music-container {
       position: fixed;
       bottom: 20px;
       right: 20px;
-      z-index: 9999 !important; /* 确保在最上层，不被遮挡 */
+      z-index: 9999 !important;
       display: flex;
       flex-direction: column;
       align-items: flex-end;
@@ -44,7 +44,7 @@
       touch-action: manipulation;
       -webkit-tap-highlight-color: transparent;
     }
-    .music-control:hover, .music-control.active {
+    .music-control:hover {
       background-color: #2980b9;
       transform: scale(1.1);
     }
@@ -85,20 +85,11 @@
       cursor: pointer;
       transition: background-color 0.2s ease;
       font-size: 0.9em;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
     }
     .music-item:hover, .music-item.active {
       background-color: #e3f2fd;
       color: #2980b9;
       font-weight: 500;
-    }
-    .no-music-tip {
-      color: #7f8c8d;
-      font-size: 0.9em;
-      text-align: center;
-      padding: 15px 0;
     }
     .progress-bar {
       width: 100%;
@@ -136,13 +127,11 @@
     }
   </style>
 
-  <!-- 音频核心 -->
   <audio id="bgm" loop preload="metadata">
     <source src="/music/我的一个道姑朋友.mp3" type="audio/mpeg">
     <p>你的浏览器不支持音频播放，请升级浏览器。</p>
   </audio>
 
-  <!-- 音乐容器 -->
   <div class="music-container" id="musicContainer">
     <div class="progress-container" id="progressContainer">
       <div class="progress-bar" id="progressBar">
@@ -159,15 +148,13 @@
     <button class="music-control" id="musicBtn">▶️</button>
   </div>
 
-  <!-- 完整JS - 修复按钮绑定 -->
   <script>
-    // 歌曲配置（确保路径正确）
-    const musicList = [
+    // 歌曲配置（唯一一份，避免重复）
+    let musicList = [
       { name: "我的一个道姑朋友", url: "/music/我的一个道姑朋友.mp3" },
       { name: "童年", url: "/music/童年.mp3" },
     ];
 
-    // DOM元素
     const bgm = document.getElementById('bgm');
     const musicBtn = document.getElementById('musicBtn');
     const musicContainer = document.getElementById('musicContainer');
@@ -198,20 +185,17 @@
       });
       musicListEl.innerHTML = listHtml;
 
-      // 绑定歌曲点击事件
+      // 绑定事件
       document.querySelectorAll('.music-item').forEach(item => {
         item.addEventListener('click', () => switchMusic(parseInt(item.dataset.index)));
       });
-
-      // 绑定按钮点击事件（核心：之前可能漏了这步）
       musicBtn.addEventListener('click', togglePlay);
 
-      // 绑定列表显示逻辑
+      // 列表显示逻辑
       if (isMobile) {
         musicBtn.addEventListener('click', () => {
           setTimeout(() => musicContainer.classList.toggle('show'), 100);
         });
-        // 点击外部关闭列表
         document.addEventListener('click', (e) => {
           if (!musicContainer.contains(e.target) && musicContainer.classList.contains('show')) {
             musicContainer.classList.remove('show');
@@ -235,23 +219,20 @@
       bgm.addEventListener('loadedmetadata', updateProgress);
       bgm.addEventListener('ended', nextSong);
       bgm.addEventListener('error', () => {
-        alert(`歌曲 "${musicList[currentMusicIndex].name}" 加载失败，请检查路径是否正确！`);
+        alert(`歌曲 "${musicList[currentMusicIndex].name}" 加载失败，请检查路径！`);
         nextSong();
       });
     }
 
-    // 播放/暂停（修复权限问题）
+    // 播放/暂停
     function togglePlay() {
       if (musicList.length === 0) return;
-
       if (isPlaying) {
         bgm.pause();
         musicBtn.innerHTML = "▶️";
       } else {
-        // 处理浏览器音频权限
         bgm.play().catch(err => {
-          alert('需要先点击页面任意位置授权音频播放，授权后再点击播放器按钮～');
-          // 授权后自动播放
+          alert('需点击页面授权音频，授权后再点播放～');
           document.addEventListener('click', () => {
             bgm.play().catch(() => {});
             musicBtn.innerHTML = "⏸️";
@@ -280,7 +261,7 @@
       switchMusic(currentMusicIndex);
     }
 
-    // 更新进度条
+    // 进度条更新
     function updateProgress() {
       if (isNaN(bgm.duration)) return;
       const percent = (bgm.currentTime / bgm.duration) * 100;
@@ -316,7 +297,7 @@
       updateProgress();
     }
 
-    // 页面加载完成后初始化（确保按钮绑定生效）
+    // 页面加载初始化
     window.addEventListener('load', initMusicPlayer);
   </script>
 
