@@ -12,41 +12,40 @@ title: Sharing And Coding
   }
 
   body {
-    /* 页面整体背景 */
     margin: 0;
-    padding: 20px 0; /* 上下留白，移动端可适当减少 */
-    background-image: url("/images/scenery/1.jpg"); /* 远山风景图 */
-    background-size: cover; /* 图片自适应屏幕 */
-    background-position: center; /* 图片居中 */
-    background-attachment: fixed; /* 滚动时背景固定 */
-    color: #333; /* 文字默认颜色 */
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; /* 使用系统无衬线字体，在移动设备上更清晰 */
+    padding: 20px 0;
+    background-image: url("/images/scenery/1.jpg");
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    color: #333;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     line-height: 1.6;
   }
 
-  /* --- 内容容器样式 (自适应核心) --- */
+  /* --- 内容容器样式 --- */
   .container {
-    max-width: 800px; /* 内容最大宽度 */
-    width: 90%; /* 关键：在小屏幕上，宽度为屏幕的90% */
-    margin: 20px auto; /* 居中显示，上下留出更多空间 */
-    padding: 30px; /* 内部留白 */
-    background-color: rgba(255, 255, 255, 0.95); /* 半透明白色背景，增加不透明度提升可读性 */
-    border-radius: 12px; /* 圆角边框 */
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15); /* 轻微阴影增加层次感 */
+    max-width: 800px;
+    width: 90%;
+    margin: 20px auto;
+    padding: 30px;
+    background-color: rgba(255, 255, 255, 0.95);
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   }
 
   /* --- 标题样式优化 --- */
   h1 {
-    color: #2c3e50; /* 深色调标题 */
-    text-align: center; /* 主标题居中 */
+    color: #2c3e50;
+    text-align: center;
     margin-bottom: 15px;
-    font-size: 2em; /* 使用相对单位 */
+    font-size: 2em;
   }
 
   h2 {
     color: #34495e;
-    border-left: 4px solid #3498db; /* 左侧蓝色装饰线 */
-    padding-left: 15px; /* 标题左内边距 */
+    border-left: 4px solid #3498db;
+    padding-left: 15px;
     margin-top: 30px;
     margin-bottom: 15px;
     font-size: 1.5em;
@@ -56,7 +55,7 @@ title: Sharing And Coding
   hr {
     border: none;
     height: 1px;
-    background: linear-gradient(to right, transparent, #ccc, transparent); /* 渐变分割线 */
+    background: linear-gradient(to right, transparent, #ccc, transparent);
     margin: 25px 0;
   }
 
@@ -69,13 +68,13 @@ title: Sharing And Coding
   .post-list li {
     margin-bottom: 15px;
     padding-bottom: 15px;
-    border-bottom: 1px solid #eee; /* 增加分隔线，提升可读性 */
-    display: flex; /* 使用Flexbox布局 */
-    flex-direction: column; /* 默认垂直排列 */
+    border-bottom: 1px solid #eee;
+    display: flex;
+    flex-direction: column;
   }
 
   .post-list a {
-    font-size: 1.1em; /* 稍微增大字号 */
+    font-size: 1.1em;
     color: #2980b9;
     text-decoration: none;
     font-weight: 500;
@@ -83,7 +82,7 @@ title: Sharing And Coding
   }
 
   .post-list a:hover {
-    color: #e74c3c; /*  hover 时变色，提升交互感 */
+    color: #e74c3c;
     text-decoration: underline;
   }
 
@@ -92,25 +91,29 @@ title: Sharing And Coding
     font-size: 0.9em;
   }
   
-  /* --- 音乐控制按钮样式 --- */
-  .music-control {
+  /* --- 音乐组件样式 --- */
+  .music-container {
     position: fixed;
-    bottom: 20px;   /* 与底部距离减小 */
-    right: 20px;    /* 与右侧距离减小 */
-    width: 50px;    /* 按钮尺寸减小 */
-    height: 50px;   /* 按钮尺寸减小 */
+    bottom: 20px;
+    right: 20px;
+    z-index: 9999;
+  }
+
+  /* 音乐控制主按钮 */
+  .music-control {
+    width: 50px;
+    height: 50px;
     border-radius: 50%;
     background-color: #3498db;
     color: white;
     border: none;
-    font-size: 20px; /* 图标尺寸减小 */
+    font-size: 20px;
     cursor: pointer;
     box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4);
     transition: all 0.3s ease;
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 9999; /* 确保按钮在最上层 */
   }
 
   .music-control:hover {
@@ -118,26 +121,118 @@ title: Sharing And Coding
     transform: scale(1.1);
   }
 
+  /* 歌曲列表（hover 显示） */
+  .music-list {
+    position: absolute;
+    bottom: 60px;
+    right: 0;
+    width: 280px;
+    background-color: rgba(255, 255, 255, 0.98);
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    padding: 15px;
+    display: none; /* 默认隐藏 */
+    max-height: 300px;
+    overflow-y: auto;
+  }
+
+  /* hover 主按钮时显示列表 */
+  .music-container:hover .music-list {
+    display: block;
+  }
+
+  .music-list-title {
+    color: #2c3e50;
+    font-size: 0.9em;
+    margin-bottom: 10px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #eee;
+  }
+
+  .music-item {
+    padding: 8px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    font-size: 0.9em;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .music-item:hover {
+    background-color: #f5f9ff;
+  }
+
+  .music-item.active {
+    background-color: #e3f2fd;
+    color: #2980b9;
+    font-weight: 500;
+  }
+
+  /* 进度条样式 */
+  .progress-container {
+    position: absolute;
+    bottom: 70px;
+    right: 0;
+    width: 280px;
+    background-color: rgba(255, 255, 255, 0.98);
+    border-radius: 10px 10px 0 0;
+    padding: 10px 15px;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+    display: none;
+  }
+
+  .music-container:hover .progress-container {
+    display: block;
+  }
+
+  .progress-bar {
+    width: 100%;
+    height: 6px;
+    background-color: #eee;
+    border-radius: 3px;
+    cursor: pointer;
+    position: relative;
+  }
+
+  .progress-fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    background-color: #3498db;
+    border-radius: 3px;
+    width: 0%; /* 初始进度 0% */
+  }
+
+  .time-display {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75em;
+    color: #7f8c8d;
+    margin-top: 5px;
+  }
+
   /* 隐藏默认音频控件 */
   audio {
     display: none;
   }
 
-  /* --- CSS Media Query (响应式设计核心) --- */
-  /* 当屏幕宽度小于或等于 768 像素时（典型的平板和手机），应用以下样式 */
+  /* --- 响应式设计 --- */
   @media (max-width: 768px) {
     body {
-      padding: 10px 0; /* 进一步减少上下留白 */
+      padding: 10px 0;
     }
 
     .container {
-      padding: 20px 15px; /* 减少内边距，让内容更紧凑 */
-      width: 95%; /* 几乎占满屏幕宽度 */
+      padding: 20px 15px;
+      width: 95%;
       margin: 10px auto;
     }
 
     h1 {
-      font-size: 1.8em; /* 减小标题字号 */
+      font-size: 1.8em;
     }
 
     h2 {
@@ -147,18 +242,24 @@ title: Sharing And Coding
     .post-list a {
       font-size: 1em;
     }
-    
-    /* 音乐按钮在小屏幕上位置更紧凑 */
-    .music-control {
+
+    .music-container {
       bottom: 15px;
       right: 15px;
+    }
+    
+    .music-control {
       width: 45px;
       height: 45px;
       font-size: 18px;
     }
+
+    .music-list, .progress-container {
+      width: 240px;
+      bottom: 55px;
+    }
   }
 
-  /* 当屏幕宽度小于或等于 480 像素时（典型的手机竖屏），应用以下样式 */
   @media (max-width: 480px) {
     h1 {
       font-size: 1.5em;
@@ -167,8 +268,11 @@ title: Sharing And Coding
     .post-list li {
       padding-bottom: 12px;
     }
-  }
 
+    .music-list, .progress-container {
+      width: 200px;
+    }
+  }
 </style>
 
 <!-- 背景音乐核心组件 -->
@@ -177,10 +281,30 @@ title: Sharing And Coding
   <p>你的浏览器不支持音频播放，请升级浏览器。</p>
 </audio>
 
-<!-- 音乐控制按钮 -->
-<button class="music-control" id="musicBtn">
-  ▶️
-</button>
+<!-- 音乐控制容器（包含按钮、列表、进度条） -->
+<div class="music-container">
+  <!-- 进度条（hover 显示） -->
+  <div class="progress-container">
+    <div class="progress-bar" id="progressBar">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <div class="time-display">
+      <span id="currentTime">00:00</span>
+      <span id="totalTime">00:00</span>
+    </div>
+  </div>
+
+  <!-- 歌曲列表（hover 显示） -->
+  <div class="music-list" id="musicList">
+    <div class="music-list-title">歌曲列表</div>
+    <!-- 歌曲项会通过 JS 自动生成 -->
+  </div>
+
+  <!-- 音乐控制主按钮 -->
+  <button class="music-control" id="musicBtn">
+    ▶️
+  </button>
+</div>
 
 <div class="container">
   <h1>花径不曾缘客扫，蓬门今始为君开</h1>
@@ -188,7 +312,7 @@ title: Sharing And Coding
   
   <!-- 自动生成文章列表 -->
   <h2>最新创作</h2>
-  <ul class="post-list"> <!-- 使用新的 class 名 -->
+  <ul class="post-list">
     {% for post in site.posts %}
       <li>
         <a href="{{ post.url }}">{{ post.title }}</a>
@@ -199,49 +323,144 @@ title: Sharing And Coding
 </div>
 
 <script>
-// 音乐控制逻辑（修复状态反转错误）
+// 核心配置：手动列出 music 文件夹下的所有歌曲（Jekyll 无法动态扫描本地文件，需手动维护）
+const musicList = [
+  { name: "我的一个道姑朋友", url: "/music/我的一个道姑朋友.mp3" },
+  // 新增歌曲请按这个格式添加，路径必须正确
+  { name: "歌曲2", url: "/music/歌曲2.mp3" },
+  { name: "歌曲3", url: "/music/歌曲3.mp3" },
+  { name: "歌曲4", url: "/music/歌曲4.mp3" }
+];
+
+// DOM 元素获取
 const bgm = document.getElementById('bgm');
 const musicBtn = document.getElementById('musicBtn');
-let isPlaying = false; // 初始状态：未播放
+const musicListEl = document.getElementById('musicList');
+const progressBar = document.getElementById('progressBar');
+const progressFill = document.getElementById('progressFill');
+const currentTimeEl = document.getElementById('currentTime');
+const totalTimeEl = document.getElementById('totalTime');
 
-// 核心：用户点击按钮切换播放/暂停
+let isPlaying = false;
+let currentMusicIndex = 0; // 当前播放歌曲索引
+
+// 1. 初始化歌曲列表
+function initMusicList() {
+  musicList.forEach((music, index) => {
+    const li = document.createElement('div');
+    li.className = `music-item ${index === currentMusicIndex ? 'active' : ''}`;
+    li.textContent = music.name;
+    li.dataset.index = index; // 存储歌曲索引
+    li.addEventListener('click', () => switchMusic(index));
+    musicListEl.appendChild(li);
+  });
+  // 设置初始歌曲
+  bgm.src = musicList[currentMusicIndex].url;
+}
+
+// 2. 切换歌曲
+function switchMusic(index) {
+  currentMusicIndex = index;
+  const newMusic = musicList[index];
+  bgm.src = newMusic.url;
+  
+  // 更新歌曲列表激活状态
+  document.querySelectorAll('.music-item').forEach((item, i) => {
+    item.classList.toggle('active', i === index);
+  });
+  
+  // 如果正在播放，切换后自动继续播放
+  if (isPlaying) {
+    bgm.play().catch(err => {
+      alert("音频播放需要授权，请点击页面任意位置后重试～");
+    });
+  }
+}
+
+// 3. 音乐播放/暂停控制
 musicBtn.addEventListener('click', async () => {
   if (isPlaying) {
-    // 播放中 → 暂停
     bgm.pause();
     musicBtn.innerHTML = "▶️";
-    isPlaying = false; // 手动设置为未播放状态
   } else {
-    // 未播放 → 尝试播放
     try {
-      bgm.muted = false;
-      await bgm.play(); // 等待播放成功
+      await bgm.play();
       musicBtn.innerHTML = "⏸️";
-      isPlaying = true; // 手动设置为播放状态
     } catch (err) {
-      // 授权失败时，提示用户点击页面任意位置后重试
       alert("音频播放需要你的授权，请点击页面任意位置后再点击播放按钮～");
-      // 监听一次页面点击，激活权限后自动播放
       document.addEventListener('click', async () => {
         await bgm.play();
-        bgm.muted = false;
         musicBtn.innerHTML = "⏸️";
-        isPlaying = true;
       }, { once: true });
     }
   }
+  isPlaying = !isPlaying;
 });
 
-// 额外兼容：用户先点击页面其他地方，提前激活音频权限
+// 4. 进度条控制（拖动+点击）
+function updateProgress() {
+  const percent = (bgm.currentTime / bgm.duration) * 100;
+  progressFill.style.width = `${percent}%`;
+  
+  // 更新时间显示
+  currentTimeEl.textContent = formatTime(bgm.currentTime);
+  totalTimeEl.textContent = formatTime(bgm.duration);
+}
+
+// 时间格式化（秒 → 分:秒）
+function formatTime(seconds) {
+  if (isNaN(seconds)) return "00:00";
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+}
+
+// 点击进度条跳转
+progressBar.addEventListener('click', (e) => {
+  const rect = progressBar.getBoundingClientRect();
+  const clickX = e.clientX - rect.left;
+  const percent = clickX / rect.width;
+  bgm.currentTime = percent * bgm.duration;
+  updateProgress();
+});
+
+// 拖动进度条跳转
+let isDragging = false;
+progressBar.addEventListener('mousedown', () => isDragging = true);
+document.addEventListener('mousemove', (e) => {
+  if (!isDragging) return;
+  const rect = progressBar.getBoundingClientRect();
+  const dragX = e.clientX - rect.left;
+  let percent = dragX / rect.width;
+  percent = Math.max(0, Math.min(1, percent)); // 限制在 0-1 之间
+  bgm.currentTime = percent * bgm.duration;
+  progressFill.style.width = `${percent * 100}%`;
+  currentTimeEl.textContent = formatTime(bgm.currentTime);
+});
+document.addEventListener('mouseup', () => isDragging = false);
+
+// 5. 音频事件监听
+bgm.addEventListener('timeupdate', updateProgress); // 播放中实时更新进度
+bgm.addEventListener('loadedmetadata', updateProgress); // 加载完成后显示总时长
+bgm.addEventListener('ended', () => {
+  // 歌曲播放完毕，自动播放下一首
+  currentMusicIndex = (currentMusicIndex + 1) % musicList.length;
+  switchMusic(currentMusicIndex);
+});
+
+// 初始化
+initMusicList();
+
+// 提前激活音频权限（可选）
 document.addEventListener('click', async () => {
-  if (isPlaying || !bgm.paused) return; // 已播放则跳过
-  try {
-    await bgm.play();
-    bgm.muted = false;
-    musicBtn.innerHTML = "⏸️";
-    isPlaying = true;
-  } catch (err) {
-    console.log('提前激活音频权限失败（正常现象）：', err);
+  if (!isPlaying && bgm.paused) {
+    try {
+      await bgm.play();
+      musicBtn.innerHTML = "⏸️";
+      isPlaying = true;
+    } catch (err) {
+      console.log('提前激活音频权限失败：', err);
+    }
   }
 }, { once: true });
 </script>
