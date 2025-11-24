@@ -149,6 +149,7 @@
 
   <script>
     // 歌曲配置
+        // 歌曲配置
     let musicList = [
       { name: "我的一个道姑朋友", url: "/music/我的一个道姑朋友.mp3" },
       { name: "童年", url: "/music/童年.mp3" },
@@ -167,72 +168,90 @@
     let currentMusicIndex = 0;
     let isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     let isDragging = false;
-    let hasInteracted = false; // 标记用户是否在当前页面有过交互
+    let hasInteracted = false; // 当前页面是否有过交互
 
-    // 保存播放状态到本地存储
+    // 保存播放状态到本地存储（持久化保存，即使关闭浏览器也不丢失）
     function savePlayState() {
       localStorage.setItem('musicIsPlaying', isPlaying);
       localStorage.setItem('musicCurrentIndex', currentMusicIndex);
       localStorage.setItem('musicCurrentTime', bgm.currentTime);
+      localStorage.setItem('musicHasPlayedOnce', 'true'); // 标记是否播放过一次
     }
 
-    // 从本地存储恢复播放状态（恢复歌曲、进度，不自动播放）
+    // 从本地存储恢复播放状态（核心优化）
     function restorePlayState() {
       const savedIsPlaying = localStorage.getItem('musicIsPlaying') === 'true';
       const savedIndex = parseInt(localStorage.getItem('musicCurrentIndex'));
       const savedTime = parseFloat(localStorage.getItem('musicCurrentTime'));
+      const hasPlayedOnce = localStorage.getItem('musicHasPlayedOnce') === 'true';
 
-      // 恢复歌曲和进度
+      // 恢复歌曲和进度（无论是否播放中，都恢复进度条）
       if (!isNaN(savedIndex) && savedIndex >= 0 && savedIndex < musicList.length) {
         currentMusicIndex = savedIndex;
         bgm.src = musicList[currentMusicIndex].url;
 
         bgm.addEventListener('loadedmetadata', () => {
           if (!isNaN(savedTime) && savedTime > 0 && savedTime < bgm.duration) {
-            bgm.currentTime = savedTime; // 恢复到之前的进度
+            bgm.currentTime = savedTime; // 恢复进度
           }
           updateProgress();
         });
       }
 
-      // 恢复UI状态（之前是播放中，则按钮显示暂停图标）
-      if (savedIsPlaying) {
+      // 关键优化：
+      // 1. 如果之前是播放中 + 已经播放过一次 → 标记为待播放状态（UI显示暂停）
+      // 2. 首次进入（未播放过）→ 保持播放状态为false（UI显示播放）
+      if (savedIsPlaying && hasPlayedOnce) {
         musicBtn.innerHTML = "⏸️";
-        isPlaying = true; // 标记为“待播放”状态
+        isPlaying = true; // 待播放状态
+      } else {
+        musicBtn.innerHTML = "▶️";
+        isPlaying = false; // 未播放状态
       }
     }
 
-    // 核心新增：监听页面首次交互，触发自动播放
-    function listenFirstInteraction() {
-      // 监听多种交互事件（点击、触摸、滑动、按键）
-      const interactionEvents = [
-        'click', 'touchstart', 'mousemove', // 基础交互
-        'scroll', 'keydown' // 滑动、按键也视为交互
-      ];
+    // 核心优化：监听页面交互，自动触发播放（覆盖所有场景）
+    function listenInteractionAndAutoPlay() {
+      const interactionEvents = ['click', 'touchstart', 'scroll', 'keydown'];
 
-      // 交互触发函数
-      function handleFirstInteraction() {
-        if (hasInteracted || !isPlaying) return; // 已交互过或无需播放，直接返回
+      function handleInteraction() {
+        if (hasInteracted) return;
+        hasInteracted = true;
 
-        // 触发自动播放（此时有用户交互，浏览器不会拦截）
-        bgm.play().then(() => {
-          console.log('用户交互后自动续播成功');
-        }).catch(err => {
-          console.log('续播失败（罕见）：', err);
-          musicBtn.innerHTML = "▶️";
-          isPlaying = false;
-        });
+        // 场景1：之前是播放中（待播放状态）→ 自动续播
+        if (isPlaying && bgm.paused) {
+          bgm.play().then(() => {
+            console.log('交互后自动续播成功');
+          }).catch(err => {
+            console.log('续播失败：', err);
+            musicBtn.innerHTML = "▶️";
+            isPlaying = false;
+            savePlayState();
+          });
+        }
+        // 场景2：首次进入（未播放过）→ 自动开始播放（无需点音乐按钮）
+        else if (!isPlaying && localStorage.getItem('musicHasPlayedOnce') !== 'true') {
+          bgm.play().then(() => {
+            console.log('首次交互后自动播放成功');
+            musicBtn.innerHTML = "⏸️";
+            isPlaying = true;
+            savePlayState(); // 标记已播放过一次
+          }).catch(err => {
+            alert('音频授权成功，点击音乐按钮开始播放～');
+            musicBtn.innerHTML = "▶️";
+            isPlaying = false;
+          });
+        }
 
-        hasInteracted = true; // 标记为已交互，避免重复触发
-        // 移除所有监听（避免性能消耗）
+        // 移除监听，避免重复触发
         interactionEvents.forEach(event => {
-          document.removeEventListener(event, handleFirstInteraction);
+          document.removeEventListener(event, handleInteraction);
         });
       }
 
       // 绑定所有交互事件（只触发一次）
       interactionEvents.forEach(event => {
-        document.addEventListener(event, handleFirstInteraction, { once: true });
+        document.addEventListener(event, handleInteraction, { once: true });
       });
     }
 
@@ -301,27 +320,15 @@
 
       // 1. 恢复之前的播放状态
       restorePlayState();
-      // 2. 监听首次交互，自动续播
-      listenFirstInteraction();
+      // 2. 监听交互，自动播放/续播
+      listenInteractionAndAutoPlay();
     }
 
-    // 播放/暂停控制
+    // 播放/暂停控制（优化逻辑）
     function togglePlay() {
       if (musicList.length === 0) return;
 
-      if (isPlaying && bgm.paused) {
-        // 待播放状态 → 播放
-        bgm.play().catch(err => {
-          alert('需点击页面授权音频，授权后自动播放～');
-          document.addEventListener('click', () => {
-            bgm.play().then(() => {
-              musicBtn.innerHTML = "⏸️";
-              isPlaying = true;
-              hasInteracted = true;
-            }).catch(() => {});
-          }, { once: true });
-        });
-      } else if (isPlaying) {
+      if (isPlaying) {
         // 播放中 → 暂停
         bgm.pause();
         musicBtn.innerHTML = "▶️";
@@ -335,6 +342,7 @@
               musicBtn.innerHTML = "⏸️";
               isPlaying = true;
               hasInteracted = true;
+              savePlayState();
             }).catch(() => {});
           }, { once: true });
         });
@@ -404,9 +412,13 @@
     // 页面加载初始化
     window.addEventListener('load', initMusicPlayer);
 
-    // 页面关闭/刷新时保存状态
+    // 页面关闭/刷新时强制保存状态（关键：避免返回时状态丢失）
     window.addEventListener('beforeunload', savePlayState);
-  </script>
 
-</body>
-</html>
+    // 额外优化：监听页面激活事件（如从其他标签页切回），自动续播
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && isPlaying && bgm.paused && hasInteracted) {
+        bgm.play().catch(() => {});
+      }
+    });
+  </script>
