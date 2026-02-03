@@ -14,13 +14,22 @@ title: 项目分享
   body {
     margin: 0;
     padding: 20px 0;
-    background-image: url("/images/scenery/1.mp4");
-    background-size: cover;
-    background-position: center;
-    background-attachment: fixed;
+    /* 已删除无效的 background-image 相关配置（无法加载MP4） */
     color: #333;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     line-height: 1.6;
+  }
+
+  /* --- 新增：视频背景样式（确保全屏、底层、不遮挡内容） --- */
+  #bg-video {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    object-fit: cover; /* 等比缩放铺满屏幕，不拉伸变形 */
+    z-index: -1; /* 置于最底层，不遮挡按钮和内容容器 */
+    pointer-events: none; /* 不拦截页面点击事件（比如返回首页按钮） */
   }
 
   /* --- 返回首页按钮 --- */
@@ -167,6 +176,14 @@ title: 项目分享
     }
   }
 </style>
+
+<!-- --- 新增：MP4 视频背景（放在所有内容之前，确保层级最低） --- -->
+<video id="bg-video" muted autoplay loop playsinline>
+  <!-- 替换为你的 MP4 视频实际路径（注意：不要放在 images 文件夹，建议新建 videos 文件夹存放） -->
+  <source src="/videos/1.mp4" type="video/mp4">
+  <!-- 浏览器不支持视频时的降级提示（可选：替换为静态图片兜底） -->
+  您的浏览器不支持 HTML5 视频播放，请升级浏览器后重试。
+</video>
 
 <!-- 返回首页按钮 -->
 <div class="back-to-home">
