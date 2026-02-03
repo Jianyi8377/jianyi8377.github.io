@@ -182,7 +182,7 @@ title: 项目分享
   <!-- 只显示技术文章 -->
   <h2>技术文章</h2>
   <ul class="post-list">
-    {% assign tech_posts = site.posts | where: "category", "program" %}
+    {% assign tech_posts = site.posts | where: "categories", "program" %}
     {% for post in tech_posts %}
       <li>
         <a href="{{ post.url }}">{{ post.title }}</a>
