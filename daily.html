@@ -14,13 +14,30 @@ title: 日常生活
   body {
     margin: 0;
     padding: 20px 0;
-    background-image: url("/images/scenery/1.jpg");
-    background-size: cover;
-    background-position: center;
-    background-attachment: fixed;
+    /* 移除静态背景图，改用视频背景 */
     color: #333;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     line-height: 1.6;
+    /* 添加备用背景，防止视频加载时空白 */
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  }
+
+  /* --- 新增：视频背景样式（确保全屏、底层、不遮挡内容） --- */
+  #bg-video {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    object-fit: cover; /* 等比缩放铺满屏幕，不拉伸变形 */
+    z-index: -1; /* 置于最底层，不遮挡按钮和内容容器 */
+    pointer-events: none; /* 不拦截页面点击事件（比如返回首页按钮） */
+    opacity: 0;
+    transition: opacity 1s ease-in-out;
+  }
+
+  #bg-video.loaded {
+    opacity: 1;
   }
 
   /* --- 返回首页按钮 --- */
@@ -168,6 +185,14 @@ title: 日常生活
   }
 </style>
 
+<!-- --- 新增：MP4 视频背景（放在所有内容之前，确保层级最低） --- -->
+<video id="bg-video" muted autoplay loop playsinline preload="metadata" poster="/images/scenery/1.jpg">
+  <!-- 替换为你的 MP4 视频实际路径 -->
+  <source src="./videos/3.mp4" type="video/mp4">
+  <!-- 浏览器不支持视频时的降级提示（使用原来的背景图） -->
+  您的浏览器不支持 HTML5 视频播放。
+</video>
+
 <!-- 返回首页按钮 -->
 <div class="back-to-home">
   <a href="/" class="home-btn">
@@ -191,3 +216,40 @@ title: 日常生活
     {% endfor %}
   </ul>
 </div>
+
+<!-- 视频加载状态检测 -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const video = document.getElementById('bg-video');
+    
+    // 视频加载成功后显示（淡入效果）
+    video.addEventListener('loadeddata', function() {
+      console.log('日常生活页面背景视频加载成功');
+      video.classList.add('loaded');
+    });
+    
+    // 视频加载失败时显示错误信息
+    video.addEventListener('error', function() {
+      console.error('日常生活页面背景视频加载失败');
+      // 可以在这里添加错误提示或保持备用背景
+      document.body.style.background = "linear-gradient(135deg, #667eea 0%, #764ba2 100%)";
+    });
+    
+    // 确保视频播放（移动端可能需要用户交互后播放）
+    const playVideo = () => {
+      if (video.paused) {
+        video.play().catch(e => {
+          console.log('视频自动播放被阻止:', e);
+        });
+      }
+    };
+    
+    // 尝试立即播放
+    playVideo();
+    
+    // 用户首次交互后尝试播放（针对移动端限制）
+    document.addEventListener('click', function() {
+      playVideo();
+    }, { once: true });
+  });
+</script>
