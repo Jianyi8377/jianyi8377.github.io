@@ -340,6 +340,7 @@ title: 项目分享
     let videoStarted = false;
     let checkInterval;
     let videoDuration = 0;
+    let lastProgressTime = 0;
     
     // 检查视频是否完全缓冲
     function checkFullyBuffered() {
@@ -353,46 +354,26 @@ title: 项目分享
         return false;
       }
       
-      // 获取视频总缓冲长度
+      // 检查是否有覆盖整个视频的缓冲
+      for (let i = 0; i < video.buffered.length; i++) {
+        const start = video.buffered.start(i);
+        const end = video.buffered.end(i);
+        
+        // 检查是否有覆盖整个视频范围的缓冲
+        if (start <= 0.1 && end >= videoDuration * 0.95) {
+          console.log(`检测到完整缓冲: ${start.toFixed(2)}s - ${end.toFixed(2)}s (总时长: ${videoDuration.toFixed(2)}s)`);
+          return true;
+        }
+      }
+      
+      // 计算总缓冲长度
       let totalBuffered = 0;
       for (let i = 0; i < video.buffered.length; i++) {
         totalBuffered += video.buffered.end(i) - video.buffered.start(i);
       }
       
-      console.log(`视频缓冲检查: 总时长 ${videoDuration.toFixed(2)}秒, 已缓冲 ${totalBuffered.toFixed(2)}秒`);
-      
-      // 检查是否完全缓冲（缓冲时长 >= 视频时长）
-      if (totalBuffered >= videoDuration) {
-        console.log('视频已完全缓冲');
-        return true;
-      }
-      
-      // 检查是否有连续的缓冲覆盖整个视频
-      let lastBufferedEnd = 0;
-      for (let i = 0; i < video.buffered.length; i++) {
-        const start = video.buffered.start(i);
-        const end = video.buffered.end(i);
-        
-        // 检查是否有从0开始的连续缓冲
-        if (i === 0 && start <= 0 && end >= videoDuration) {
-          console.log('视频有从0开始的完整缓冲');
-          return true;
-        }
-        
-        // 检查是否有覆盖整个视频范围的缓冲
-        if (start <= 0 && end >= videoDuration) {
-          console.log('视频有覆盖整个时长的缓冲');
-          return true;
-        }
-        
-        lastBufferedEnd = Math.max(lastBufferedEnd, end);
-      }
-      
-      // 如果最后一个缓冲段覆盖到了视频结束
-      if (lastBufferedEnd >= videoDuration) {
-        console.log('最后一个缓冲段覆盖到视频结束');
-        return true;
-      }
+      const bufferPercentage = (totalBuffered / videoDuration) * 100;
+      console.log(`缓冲进度: ${bufferPercentage.toFixed(1)}% (${totalBuffered.toFixed(2)}/${videoDuration.toFixed(2)}秒)`);
       
       return false;
     }
@@ -402,6 +383,7 @@ title: 项目分享
       if (videoLoaded || videoStarted) {
         if (checkInterval) {
           clearInterval(checkInterval);
+          console.log('停止定期检查');
         }
         return;
       }
@@ -411,6 +393,13 @@ title: 项目分享
       if (checkFullyBuffered()) {
         console.log('检测到视频已完全缓冲，准备播放');
         onVideoLoaded();
+      } else {
+        // 检查是否有进度（防止卡住）
+        const now = Date.now();
+        if (lastProgressTime > 0 && (now - lastProgressTime) > 30000) {
+          console.log('30秒内没有缓冲进度，可能已卡住，尝试重新加载');
+          // 不重新加载，继续等待
+        }
       }
     }
     
@@ -509,6 +498,9 @@ title: 项目分享
     });
     
     video.addEventListener('progress', function() {
+      // 记录最后一次进度更新时间
+      lastProgressTime = Date.now();
+      
       // 每次缓冲进度更新时检查
       if (!videoLoaded && !videoStarted) {
         checkVideoBufferStatus();
@@ -526,20 +518,9 @@ title: 项目分享
       }, 100);
     }
     
-    // 启动定期检查（每3秒检查一次）
-    checkInterval = setInterval(checkVideoBufferStatus, 3000);
-    
-    // 30秒后停止检查（如果视频需要很长时间缓冲）
-    setTimeout(() => {
-      if (checkInterval) {
-        clearInterval(checkInterval);
-        console.log('30秒后停止缓冲检查');
-        
-        if (!videoLoaded && !videoStarted) {
-          console.log('视频缓冲超时，保持背景图显示');
-        }
-      }
-    }, 30000);
+    // 启动定期检查（每5秒检查一次，不会停止）
+    checkInterval = setInterval(checkVideoBufferStatus, 5000);
+    console.log('启动无限期缓冲检查，每5秒检查一次');
     
     // 监听窗口大小变化，重新设置背景图
     window.addEventListener('resize', function() {
@@ -576,10 +557,19 @@ title: 项目分享
       // 清除检查间隔
       if (checkInterval) {
         clearInterval(checkInterval);
+        console.log('视频加载错误，停止缓冲检查');
+      }
+    });
+    
+    // 网络状态改变时重新尝试
+    window.addEventListener('online', function() {
+      if (!videoLoaded && !videoStarted) {
+        console.log('网络恢复，继续缓冲视频');
       }
     });
     
     // 立即开始加载视频
     video.load();
+    console.log('开始加载视频，等待完全缓冲...');
   });
 </script>
