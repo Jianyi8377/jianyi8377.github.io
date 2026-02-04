@@ -85,8 +85,7 @@ title: 项目分享
     width: 90%;
     margin: 20px auto;
     padding: 30px;
-    background-color: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(10px);
+    background-color: rgba(255, 255, 255, 0.15);
     -webkit-backdrop-filter: blur(10px);
     border-radius: 12px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
@@ -241,7 +240,7 @@ title: 项目分享
       padding: 20px 15px;
       width: 95%;
       margin: 10px auto;
-      background-color: rgba(255, 255, 255, 0.9);
+      background-color: rgba(255, 255, 255, 0.15);
     }
 
     h1 {
@@ -339,11 +338,91 @@ title: 项目分享
     // 视频加载状态跟踪
     let videoLoaded = false;
     let videoStarted = false;
+    let checkInterval;
+    let videoDuration = 0;
+    
+    // 检查视频是否完全缓冲
+    function checkFullyBuffered() {
+      if (!videoDuration || videoDuration <= 0) {
+        console.log('视频时长未知，等待元数据...');
+        return false;
+      }
+      
+      if (!video.buffered || video.buffered.length === 0) {
+        console.log('视频暂无缓冲数据');
+        return false;
+      }
+      
+      // 获取视频总缓冲长度
+      let totalBuffered = 0;
+      for (let i = 0; i < video.buffered.length; i++) {
+        totalBuffered += video.buffered.end(i) - video.buffered.start(i);
+      }
+      
+      console.log(`视频缓冲检查: 总时长 ${videoDuration.toFixed(2)}秒, 已缓冲 ${totalBuffered.toFixed(2)}秒`);
+      
+      // 检查是否完全缓冲（缓冲时长 >= 视频时长）
+      if (totalBuffered >= videoDuration) {
+        console.log('视频已完全缓冲');
+        return true;
+      }
+      
+      // 检查是否有连续的缓冲覆盖整个视频
+      let lastBufferedEnd = 0;
+      for (let i = 0; i < video.buffered.length; i++) {
+        const start = video.buffered.start(i);
+        const end = video.buffered.end(i);
+        
+        // 检查是否有从0开始的连续缓冲
+        if (i === 0 && start <= 0 && end >= videoDuration) {
+          console.log('视频有从0开始的完整缓冲');
+          return true;
+        }
+        
+        // 检查是否有覆盖整个视频范围的缓冲
+        if (start <= 0 && end >= videoDuration) {
+          console.log('视频有覆盖整个时长的缓冲');
+          return true;
+        }
+        
+        lastBufferedEnd = Math.max(lastBufferedEnd, end);
+      }
+      
+      // 如果最后一个缓冲段覆盖到了视频结束
+      if (lastBufferedEnd >= videoDuration) {
+        console.log('最后一个缓冲段覆盖到视频结束');
+        return true;
+      }
+      
+      return false;
+    }
+    
+    // 定期检查视频缓冲状态
+    function checkVideoBufferStatus() {
+      if (videoLoaded || videoStarted) {
+        if (checkInterval) {
+          clearInterval(checkInterval);
+        }
+        return;
+      }
+      
+      console.log('定期检查视频缓冲状态...');
+      
+      if (checkFullyBuffered()) {
+        console.log('检测到视频已完全缓冲，准备播放');
+        onVideoLoaded();
+      }
+    }
     
     // 视频加载成功回调
     function onVideoLoaded() {
-      console.log('视频已加载完成');
+      console.log('视频已完全缓冲，准备播放');
       videoLoaded = true;
+      
+      // 清除检查间隔
+      if (checkInterval) {
+        clearInterval(checkInterval);
+      }
       
       // 尝试播放视频
       tryStartVideo();
@@ -400,22 +479,67 @@ title: 项目分享
         });
     }
     
+    // 获取视频时长
+    function getVideoDuration() {
+      if (video.duration && video.duration > 0) {
+        videoDuration = video.duration;
+        console.log('获取到视频时长:', videoDuration.toFixed(2), '秒');
+      }
+    }
+    
     // 监听视频加载事件
-    video.addEventListener('loadeddata', onVideoLoaded);
-    video.addEventListener('canplay', onVideoLoaded);
-    video.addEventListener('canplaythrough', onVideoLoaded);
+    video.addEventListener('loadedmetadata', function() {
+      console.log('视频元数据加载完成');
+      getVideoDuration();
+    });
+    
+    video.addEventListener('loadeddata', function() {
+      console.log('视频数据已加载');
+      getVideoDuration();
+    });
+    
+    video.addEventListener('canplay', function() {
+      console.log('视频可以播放');
+      // 不在这里触发播放，等待完全缓冲
+    });
+    
+    video.addEventListener('canplaythrough', function() {
+      console.log('视频可以流畅播放到结束');
+      // 不在这里触发播放，等待完全缓冲
+    });
+    
+    video.addEventListener('progress', function() {
+      // 每次缓冲进度更新时检查
+      if (!videoLoaded && !videoStarted) {
+        checkVideoBufferStatus();
+      }
+    });
     
     // 检查视频是否已缓存
     if (video.readyState >= 3) { // HAVE_FUTURE_DATA
-      setTimeout(onVideoLoaded, 100);
+      setTimeout(function() {
+        getVideoDuration();
+        // 立即检查是否已完全缓冲
+        if (checkFullyBuffered()) {
+          onVideoLoaded();
+        }
+      }, 100);
     }
     
-    // 超时处理：10秒后如果视频还没加载，保持背景图
+    // 启动定期检查（每3秒检查一次）
+    checkInterval = setInterval(checkVideoBufferStatus, 3000);
+    
+    // 30秒后停止检查（如果视频需要很长时间缓冲）
     setTimeout(() => {
-      if (!videoLoaded) {
-        console.log('视频加载超时，保持背景图显示');
+      if (checkInterval) {
+        clearInterval(checkInterval);
+        console.log('30秒后停止缓冲检查');
+        
+        if (!videoLoaded && !videoStarted) {
+          console.log('视频缓冲超时，保持背景图显示');
+        }
       }
-    }, 10000);
+    }, 30000);
     
     // 监听窗口大小变化，重新设置背景图
     window.addEventListener('resize', function() {
@@ -448,6 +572,11 @@ title: 项目分享
     video.addEventListener('error', function(e) {
       console.error('视频加载错误:', e);
       // 保持背景图显示
+      
+      // 清除检查间隔
+      if (checkInterval) {
+        clearInterval(checkInterval);
+      }
     });
     
     // 立即开始加载视频
