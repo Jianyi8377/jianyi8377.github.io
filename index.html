@@ -200,31 +200,116 @@ title: 欢迎
         /* 响应式设计 */
         @media (max-width: 768px) {
             .title {
-                font-size: 2.5rem;
+                font-size: 2.2rem;
             }
             
             .subtitle {
-                font-size: 1.2rem;
+                font-size: 1.1rem;
+                margin-bottom: 2rem;
+                padding: 0 15px;
             }
             
             .nav-cards {
-                flex-direction: column;
+                flex-direction: row; /* 改为横向排列 */
+                flex-wrap: wrap; /* 允许换行 */
+                justify-content: center;
+                gap: 15px;
+                width: 100%;
+                max-width: 100%;
+                padding: 0 10px;
+            }
+            
+            .nav-card {
+                width: calc(50% - 10px); /* 两个卡片并排，每张占一半减去间距 */
+                max-width: 300px;
+                height: 320px;
+                min-width: 0;
+            }
+            
+            .card-icon {
+                font-size: 2.8rem;
+            }
+            
+            .card-title {
+                font-size: 1.4rem;
+            }
+            
+            .card-desc {
+                font-size: 0.95rem;
+            }
+            
+            .card-front {
+                padding: 20px;
+            }
+            
+            .card-back {
+                padding: 20px;
+            }
+            
+            .card-back h3 {
+                font-size: 1.3rem;
+                margin-bottom: 10px;
+            }
+            
+            .card-back p {
+                font-size: 0.9rem;
+                line-height: 1.5;
+                margin-bottom: 8px;
+            }
+            
+            .card-btn {
+                padding: 10px 20px;
+                font-size: 1rem;
+                margin-top: 15px;
+            }
+        }
+        
+        /* 更小屏幕的适配 */
+        @media (max-width: 480px) {
+            .title {
+                font-size: 1.8rem;
+            }
+            
+            .subtitle {
+                font-size: 1rem;
+                margin-bottom: 1.5rem;
+            }
+            
+            .nav-cards {
+                flex-direction: column; /* 超小屏幕纵向排列 */
                 align-items: center;
-                gap: 20px;
+                gap: 15px;
             }
             
             .nav-card {
                 width: 90%;
-                max-width: 350px;
-                height: 350px;
+                max-width: 320px;
+                height: 300px;
             }
             
             .card-icon {
-                font-size: 3rem;
+                font-size: 2.5rem;
             }
             
             .card-title {
-                font-size: 1.5rem;
+                font-size: 1.3rem;
+            }
+            
+            .card-desc {
+                font-size: 0.9rem;
+            }
+            
+            .card-back h3 {
+                font-size: 1.2rem;
+            }
+            
+            .card-back p {
+                font-size: 0.85rem;
+            }
+            
+            .card-btn {
+                padding: 8px 16px;
+                font-size: 0.9rem;
             }
         }
         
@@ -236,6 +321,13 @@ title: 欢迎
             text-align: center;
             font-size: 0.9rem;
             opacity: 0.7;
+        }
+        
+        @media (max-width: 768px) {
+            .footer {
+                bottom: 10px;
+                font-size: 0.8rem;
+            }
         }
     </style>
 </head>
@@ -296,7 +388,7 @@ title: 欢迎
     </div>
     
     <div class="footer">
-        <p>欢迎来到我的世界 | 更新时间: {{ site.time | date: "%Y-%m-%d" }}</p>
+        <p>一路寒风身如 | 更新时间: {{ site.time | date: "%Y-%m-%d" }}</p>
     </div>
     
     <!-- 粒子系统库 -->
