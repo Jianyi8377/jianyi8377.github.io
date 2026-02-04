@@ -17,8 +17,7 @@ title: 项目分享
     color: #333;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     line-height: 1.6;
-    /* 移动端背景色备用 */
-    background-color: #f5f7fa;
+    background-color: #f5f7fa; /* 默认背景色 */
   }
 
   /* --- 视频背景样式 --- */
@@ -31,21 +30,12 @@ title: 项目分享
     object-fit: cover;
     z-index: -1;
     pointer-events: none;
-    /* 移动端优化：避免视频影响页面性能 */
-    -webkit-backface-visibility: hidden;
-    -webkit-transform: translateZ(0);
-    /* 移动端缩放优化 */
-    transform: translateZ(0);
-    backface-visibility: hidden;
+    opacity: 1;
+    transition: opacity 0.5s;
   }
 
   /* 视频加载前的占位样式 */
-  #bg-video.is-loading {
-    opacity: 0;
-  }
-
-  /* --- 备用背景图片（当视频无法播放时显示） --- */
-  .fallback-bg {
+  .video-placeholder {
     position: fixed;
     top: 0;
     left: 0;
@@ -53,47 +43,6 @@ title: 项目分享
     height: 100vh;
     z-index: -2;
     background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-    display: none;
-  }
-
-  /* --- 视频播放按钮（针对移动端手动触发播放） --- */
-  .video-play-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    z-index: -1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(0, 0, 0, 0.4);
-    opacity: 0;
-    visibility: hidden;
-    transition: all 0.3s;
-  }
-
-  .video-play-overlay.active {
-    opacity: 1;
-    visibility: visible;
-  }
-
-  .play-btn {
-    padding: 15px 30px;
-    background: rgba(52, 152, 219, 0.9);
-    color: white;
-    border: none;
-    border-radius: 50px;
-    font-size: 18px;
-    font-weight: bold;
-    cursor: pointer;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-    transition: all 0.3s;
-  }
-
-  .play-btn:hover {
-    background: rgba(41, 128, 185, 0.9);
-    transform: scale(1.05);
   }
 
   /* --- 返回首页按钮 --- */
@@ -133,8 +82,8 @@ title: 项目分享
     width: 90%;
     margin: 20px auto;
     padding: 30px;
-    background-color: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(5px); /* 毛玻璃效果增强可读性 */
+    background-color: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(5px);
     border-radius: 12px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   }
@@ -206,7 +155,7 @@ title: 项目分享
       padding: 20px 15px;
       width: 95%;
       margin: 10px auto;
-      background-color: rgba(255, 255, 255, 0.85); /* 移动端增加不透明度 */
+      background-color: rgba(255, 255, 255, 0.9);
     }
 
     h1 {
@@ -230,19 +179,6 @@ title: 项目分享
       padding: 8px 14px;
       font-size: 14px;
     }
-
-    /* 移动端视频优化 */
-    #bg-video {
-      /* 移动端考虑降低视频质量以提高性能 */
-      width: 100%;
-      height: 100%;
-    }
-
-    /* 移动端按钮样式 */
-    .play-btn {
-      padding: 12px 25px;
-      font-size: 16px;
-    }
   }
 
   @media (max-width: 480px) {
@@ -253,43 +189,16 @@ title: 项目分享
     .post-list li {
       padding-bottom: 12px;
     }
-
-    .container {
-      background-color: rgba(255, 255, 255, 0.9); /* 小屏幕进一步增加不透明度 */
-    }
-
-    .play-btn {
-      padding: 10px 20px;
-      font-size: 15px;
-    }
-  }
-
-  /* 针对低电量模式或性能较差的设备 */
-  @media (prefers-reduced-motion: reduce) {
-    #bg-video {
-      display: none !important;
-    }
-    
-    .fallback-bg {
-      display: block !important;
-    }
   }
 </style>
 
-<!-- 备用背景（当视频无法播放时显示） -->
-<div class="fallback-bg" id="fallback-bg"></div>
+<!-- 视频占位背景 -->
+<div class="video-placeholder" id="video-placeholder"></div>
 
-<!-- 视频播放覆盖层（针对移动端需要手动触发） -->
-<div class="video-play-overlay" id="video-overlay">
-  <button class="play-btn" id="play-video-btn">▶ 播放背景视频</button>
-</div>
-
-<!-- MP4 视频背景 -->
-<video id="bg-video" muted loop playsinline preload="auto" poster="./videos/poster.jpg">
+<!-- MP4 视频背景 - 简化版本 -->
+<video id="bg-video" muted playsinline preload="auto" loop>
   <!-- 替换为你的 MP4 视频实际路径 -->
   <source src="./videos/2.mp4" type="video/mp4">
-  <!-- 备用的更小版本，用于移动端 -->
-  <source src="./videos/2-mobile.mp4" type="video/mp4" media="(max-width: 768px)">
   您的浏览器不支持 HTML5 视频播放。
 </video>
 
@@ -318,122 +227,88 @@ title: 项目分享
 </div>
 
 <script>
-  // 移动端视频播放策略
+  // 简化的移动端视频播放方案
   document.addEventListener('DOMContentLoaded', function() {
     const video = document.getElementById('bg-video');
-    const fallbackBg = document.getElementById('fallback-bg');
-    const videoOverlay = document.getElementById('video-overlay');
-    const playButton = document.getElementById('play-video-btn');
+    const placeholder = document.getElementById('video-placeholder');
     
     // 检测是否为移动设备
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     
-    // 视频加载状态
-    let videoLoaded = false;
-    let playAttempted = false;
+    // 设置视频为静音（移动端静音视频可以自动播放）
+    video.muted = true;
+    video.playsInline = true;
     
-    // 检查视频是否支持自动播放
-    function checkAutoPlaySupport() {
-      // 在移动端，静音视频通常可以自动播放
-      video.muted = true;
+    // 尝试播放视频的简单函数
+    function tryPlayVideo() {
       const playPromise = video.play();
       
       if (playPromise !== undefined) {
-        playPromise.then(() => {
-          // 自动播放成功
-          videoLoaded = true;
-          videoOverlay.classList.remove('active');
-          console.log('视频自动播放成功');
-        }).catch(error => {
-          // 自动播放被阻止，显示播放按钮
-          console.log('自动播放被阻止，显示播放按钮');
-          showPlayButton();
-          
-          // 如果是iOS设备，添加特定处理
-          if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-            video.load(); // 重新加载视频
-          }
-        });
+        playPromise
+          .then(() => {
+            // 播放成功
+            console.log('视频播放成功');
+            placeholder.style.display = 'none'; // 隐藏占位背景
+            video.style.opacity = '1';
+          })
+          .catch(error => {
+            console.log('自动播放被阻止:', error);
+            
+            // 如果是iOS设备，可能需要用户交互
+            if (isMobile) {
+              console.log('移动端检测到自动播放限制');
+              
+              // 添加一次性点击事件监听
+              const startVideoOnInteraction = function() {
+                video.play()
+                  .then(() => {
+                    console.log('通过用户交互播放成功');
+                    placeholder.style.display = 'none';
+                    video.style.opacity = '1';
+                  })
+                  .catch(e => {
+                    console.log('用户交互后播放仍失败:', e);
+                  });
+                
+                // 移除事件监听器，避免重复触发
+                document.removeEventListener('click', startVideoOnInteraction);
+                document.removeEventListener('touchstart', startVideoOnInteraction);
+              };
+              
+              // 监听用户点击或触摸
+              document.addEventListener('click', startVideoOnInteraction);
+              document.addEventListener('touchstart', startVideoOnInteraction);
+            }
+          });
       }
     }
     
-    // 显示播放按钮
-    function showPlayButton() {
-      // 延迟显示，确保页面加载完成
-      setTimeout(() => {
-        videoOverlay.classList.add('active');
-      }, 1000);
-    }
-    
-    // 手动播放视频
-    function playVideo() {
-      playAttempted = true;
-      const playPromise = video.play();
-      
-      if (playPromise !== undefined) {
-        playPromise.then(() => {
-          // 播放成功
-          videoLoaded = true;
-          videoOverlay.classList.remove('active');
-          console.log('手动播放成功');
-        }).catch(error => {
-          // 播放失败，显示备用背景
-          console.log('视频播放失败，使用备用背景');
-          video.style.display = 'none';
-          fallbackBg.style.display = 'block';
-          videoOverlay.classList.remove('active');
-        });
-      }
-    }
-    
-    // 视频加载事件
+    // 等待视频加载完成
     video.addEventListener('loadeddata', function() {
-      console.log('视频加载完成');
-      
-      // 移动端：等待用户交互后再尝试播放
-      if (isMobile && !playAttempted) {
-        showPlayButton();
-      } else {
-        // 桌面端：尝试自动播放
-        checkAutoPlaySupport();
-      }
+      console.log('视频已加载');
+      tryPlayVideo();
     });
     
-    // 视频加载错误处理
-    video.addEventListener('error', function() {
-      console.error('视频加载失败，使用备用背景');
-      video.style.display = 'none';
-      fallbackBg.style.display = 'block';
-      videoOverlay.classList.remove('active');
-    });
+    // 如果视频已经加载完成（比如缓存）
+    if (video.readyState >= 3) {
+      setTimeout(tryPlayVideo, 300);
+    }
     
-    // 点击播放按钮
-    playButton.addEventListener('click', function() {
-      playVideo();
-    });
-    
-    // 页面可见性变化处理（避免标签页切换后视频停止）
+    // 页面可见性变化处理
     document.addEventListener('visibilitychange', function() {
-      if (!document.hidden && videoLoaded) {
-        // 页面重新可见，恢复播放
+      if (!document.hidden) {
+        // 页面重新可见，尝试恢复播放
         video.play().catch(e => console.log('恢复播放失败'));
       }
     });
     
-    // 初始加载：如果是移动设备，预加载但不自动播放
-    if (isMobile) {
-      video.setAttribute('preload', 'auto');
-      video.load();
-    } else {
-      // 桌面设备立即尝试播放
-      checkAutoPlaySupport();
-    }
+    // 添加错误处理
+    video.addEventListener('error', function(e) {
+      console.error('视频加载错误:', e);
+      // 保持占位背景显示
+    });
     
-    // 检测低电量模式或性能模式
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      console.log('检测到减少动画偏好，隐藏视频背景');
-      video.style.display = 'none';
-      fallbackBg.style.display = 'block';
-    }
+    // 初始尝试播放
+    setTimeout(tryPlayVideo, 500);
   });
 </script>
