@@ -14,30 +14,38 @@ title: 日常生活
   body {
     margin: 0;
     padding: 20px 0;
-    /* 移除静态背景图，改用视频背景 */
     color: #333;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     line-height: 1.6;
-    /* 添加备用背景，防止视频加载时空白 */
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background-color: #f5f7fa; /* 默认背景色 */
   }
 
-  /* --- 新增：视频背景样式（确保全屏、底层、不遮挡内容） --- */
+  /* --- 背景样式 --- */
   #bg-video {
     position: fixed;
     top: 0;
     left: 0;
     width: 100vw;
     height: 100vh;
-    object-fit: cover; /* 等比缩放铺满屏幕，不拉伸变形 */
-    z-index: -1; /* 置于最底层，不遮挡按钮和内容容器 */
-    pointer-events: none; /* 不拦截页面点击事件（比如返回首页按钮） */
-    opacity: 0;
-    transition: opacity 1s ease-in-out;
+    object-fit: cover;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0; /* 初始不可见 */
+    transition: opacity 0.8s ease;
   }
 
-  #bg-video.loaded {
-    opacity: 1;
+  /* 背景图占位样式 */
+  .bg-placeholder {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: -2;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    transition: opacity 0.8s ease;
   }
 
   /* --- 返回首页按钮 --- */
@@ -78,6 +86,7 @@ title: 日常生活
     margin: 20px auto;
     padding: 30px;
     background-color: rgba(255, 255, 255, 0.15);
+    -webkit-backdrop-filter: blur(10px);
     border-radius: 12px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   }
@@ -149,6 +158,7 @@ title: 日常生活
       padding: 20px 15px;
       width: 95%;
       margin: 10px auto;
+      background-color: rgba(255, 255, 255, 0.15);
     }
 
     h1 {
@@ -185,11 +195,17 @@ title: 日常生活
   }
 </style>
 
-<!-- --- 新增：MP4 视频背景（放在所有内容之前，确保层级最低） --- -->
-<video id="bg-video" muted autoplay loop playsinline preload="metadata" poster="/images/scenery/1.jpg">
-  <!-- 替换为你的 MP4 视频实际路径 -->
+<!-- 背景图占位符（初始显示） -->
+<div class="bg-placeholder" id="bg-placeholder"></div>
+
+<!-- MP4 视频背景 - 移动端使用 5.mp4，电脑端使用 3.mp4 -->
+<video id="bg-video" muted playsinline preload="auto" loop>
+  <!-- 移动端用 5.mp4（屏幕宽度 ≤ 768px） -->
+  <source src="./videos/5.mp4" media="(max-width: 768px)" type="video/mp4">
+  <!-- 电脑端用 3.mp4（屏幕宽度 ≥ 769px） -->
+  <source src="./videos/3.mp4" media="(min-width: 769px)" type="video/mp4">
+  <!-- 默认用 3.mp4（兼容不支持 media 属性的旧浏览器） -->
   <source src="./videos/3.mp4" type="video/mp4">
-  <!-- 浏览器不支持视频时的降级提示（使用原来的背景图） -->
   您的浏览器不支持 HTML5 视频播放。
 </video>
 
@@ -217,39 +233,260 @@ title: 日常生活
   </ul>
 </div>
 
-<!-- 视频加载状态检测 -->
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     const video = document.getElementById('bg-video');
+    const placeholder = document.getElementById('bg-placeholder');
     
-    // 视频加载成功后显示（淡入效果）
-    video.addEventListener('loadeddata', function() {
-      console.log('日常生活页面背景视频加载成功');
-      video.classList.add('loaded');
-    });
+    // 检测设备类型，设置初始背景图
+    const isMobile = window.innerWidth <= 768;
+    if (isMobile) {
+      // 移动端使用 4.jpg
+      placeholder.style.backgroundImage = "url('./images/4.jpg')";
+    } else {
+      // 电脑端使用 2.jpg
+      placeholder.style.backgroundImage = "url('./images/2.jpg')";
+    }
     
-    // 视频加载失败时显示错误信息
-    video.addEventListener('error', function() {
-      console.error('日常生活页面背景视频加载失败');
-      // 可以在这里添加错误提示或保持备用背景
-      document.body.style.background = "linear-gradient(135deg, #667eea 0%, #764ba2 100%)";
-    });
+    // 设置视频属性
+    video.muted = true;
+    video.playsInline = true;
+    video.setAttribute('preload', 'auto');
     
-    // 确保视频播放（移动端可能需要用户交互后播放）
-    const playVideo = () => {
-      if (video.paused) {
-        video.play().catch(e => {
-          console.log('视频自动播放被阻止:', e);
-        });
+    // 视频加载状态跟踪
+    let videoLoaded = false;
+    let videoStarted = false;
+    let checkInterval;
+    let videoDuration = 0;
+    let lastProgressTime = 0;
+    
+    // 检查视频是否完全缓冲
+    function checkFullyBuffered() {
+      if (!videoDuration || videoDuration <= 0) {
+        console.log('视频时长未知，等待元数据...');
+        return false;
       }
-    };
+      
+      if (!video.buffered || video.buffered.length === 0) {
+        console.log('视频暂无缓冲数据');
+        return false;
+      }
+      
+      // 检查是否有覆盖整个视频的缓冲
+      for (let i = 0; i < video.buffered.length; i++) {
+        const start = video.buffered.start(i);
+        const end = video.buffered.end(i);
+        
+        // 检查是否有覆盖整个视频范围的缓冲
+        if (start <= 0.1 && end >= videoDuration * 0.95) {
+          console.log(`检测到完整缓冲: ${start.toFixed(2)}s - ${end.toFixed(2)}s (总时长: ${videoDuration.toFixed(2)}s)`);
+          return true;
+        }
+      }
+      
+      // 计算总缓冲长度
+      let totalBuffered = 0;
+      for (let i = 0; i < video.buffered.length; i++) {
+        totalBuffered += video.buffered.end(i) - video.buffered.start(i);
+      }
+      
+      const bufferPercentage = (totalBuffered / videoDuration) * 100;
+      console.log(`缓冲进度: ${bufferPercentage.toFixed(1)}% (${totalBuffered.toFixed(2)}/${videoDuration.toFixed(2)}秒)`);
+      
+      return false;
+    }
     
-    // 尝试立即播放
-    playVideo();
+    // 定期检查视频缓冲状态
+    function checkVideoBufferStatus() {
+      if (videoLoaded || videoStarted) {
+        if (checkInterval) {
+          clearInterval(checkInterval);
+          console.log('停止定期检查');
+        }
+        return;
+      }
+      
+      console.log('定期检查视频缓冲状态...');
+      
+      if (checkFullyBuffered()) {
+        console.log('检测到视频已完全缓冲，准备播放');
+        onVideoLoaded();
+      } else {
+        // 检查是否有进度（防止卡住）
+        const now = Date.now();
+        if (lastProgressTime > 0 && (now - lastProgressTime) > 30000) {
+          console.log('30秒内没有缓冲进度，可能已卡住，继续等待...');
+        }
+      }
+    }
     
-    // 用户首次交互后尝试播放（针对移动端限制）
-    document.addEventListener('click', function() {
-      playVideo();
-    }, { once: true });
+    // 视频加载成功回调
+    function onVideoLoaded() {
+      console.log('视频已完全缓冲，准备播放');
+      videoLoaded = true;
+      
+      // 清除检查间隔
+      if (checkInterval) {
+        clearInterval(checkInterval);
+      }
+      
+      // 尝试播放视频
+      tryStartVideo();
+    }
+    
+    // 尝试播放视频
+    function tryStartVideo() {
+      if (!videoLoaded || videoStarted) return;
+      
+      video.play()
+        .then(() => {
+          console.log('视频播放成功');
+          videoStarted = true;
+          
+          // 延迟切换，确保视频流畅播放
+          setTimeout(() => {
+            // 显示视频，淡出背景图
+            video.style.opacity = '1';
+            placeholder.style.opacity = '0';
+            
+            // 淡出完成后隐藏占位图
+            setTimeout(() => {
+              placeholder.style.display = 'none';
+            }, 1000);
+          }, 300);
+        })
+        .catch(error => {
+          console.log('视频播放被阻止:', error);
+          
+          // 添加用户交互监听
+          const startOnInteraction = function() {
+            video.play()
+              .then(() => {
+                console.log('通过用户交互播放成功');
+                videoStarted = true;
+                
+                // 显示视频，淡出背景图
+                video.style.opacity = '1';
+                placeholder.style.opacity = '0';
+                
+                setTimeout(() => {
+                  placeholder.style.display = 'none';
+                }, 1000);
+              })
+              .catch(e => console.log('用户交互后播放仍失败:', e));
+            
+            // 移除监听器
+            document.removeEventListener('click', startOnInteraction);
+            document.removeEventListener('touchstart', startOnInteraction);
+          };
+          
+          document.addEventListener('click', startOnInteraction);
+          document.addEventListener('touchstart', startOnInteraction);
+        });
+    }
+    
+    // 获取视频时长
+    function getVideoDuration() {
+      if (video.duration && video.duration > 0) {
+        videoDuration = video.duration;
+        console.log('获取到视频时长:', videoDuration.toFixed(2), '秒');
+      }
+    }
+    
+    // 监听视频加载事件
+    video.addEventListener('loadedmetadata', function() {
+      console.log('视频元数据加载完成');
+      getVideoDuration();
+    });
+    
+    video.addEventListener('loadeddata', function() {
+      console.log('视频数据已加载');
+      getVideoDuration();
+    });
+    
+    video.addEventListener('canplay', function() {
+      console.log('视频可以播放');
+      // 不在这里触发播放，等待完全缓冲
+    });
+    
+    video.addEventListener('canplaythrough', function() {
+      console.log('视频可以流畅播放到结束');
+      // 不在这里触发播放，等待完全缓冲
+    });
+    
+    video.addEventListener('progress', function() {
+      // 记录最后一次进度更新时间
+      lastProgressTime = Date.now();
+      
+      // 每次缓冲进度更新时检查
+      if (!videoLoaded && !videoStarted) {
+        checkVideoBufferStatus();
+      }
+    });
+    
+    // 检查视频是否已缓存
+    if (video.readyState >= 3) { // HAVE_FUTURE_DATA
+      setTimeout(function() {
+        getVideoDuration();
+        // 立即检查是否已完全缓冲
+        if (checkFullyBuffered()) {
+          onVideoLoaded();
+        }
+      }, 100);
+    }
+    
+    // 启动定期检查（每5秒检查一次，不会停止）
+    checkInterval = setInterval(checkVideoBufferStatus, 5000);
+    console.log('启动无限期缓冲检查，每5秒检查一次');
+    
+    // 监听窗口大小变化，重新设置背景图
+    window.addEventListener('resize', function() {
+      const nowMobile = window.innerWidth <= 768;
+      
+      if (videoStarted) {
+        // 如果视频已经在播放，重新加载视频源
+        video.load();
+        video.play().catch(e => console.log('切换尺寸后播放失败'));
+      } else {
+        // 如果视频还没开始播放，更新背景图
+        if (nowMobile !== isMobile) {
+          if (nowMobile) {
+            placeholder.style.backgroundImage = "url('./images/4.jpg')";
+          } else {
+            placeholder.style.backgroundImage = "url('./images/2.jpg')";
+          }
+        }
+      }
+    });
+    
+    // 页面可见性变化处理
+    document.addEventListener('visibilitychange', function() {
+      if (!document.hidden && videoStarted) {
+        video.play().catch(e => console.log('恢复播放失败'));
+      }
+    });
+    
+    // 错误处理
+    video.addEventListener('error', function(e) {
+      console.error('视频加载错误:', e);
+      // 保持背景图显示
+      
+      // 清除检查间隔
+      if (checkInterval) {
+        clearInterval(checkInterval);
+        console.log('视频加载错误，停止缓冲检查');
+      }
+    });
+    
+    // 网络状态改变时重新尝试
+    window.addEventListener('online', function() {
+      if (!videoLoaded && !videoStarted) {
+        console.log('网络恢复，继续缓冲视频');
+      }
+    });
+    
+    // 立即开始加载视频
+    video.load();
+    console.log('开始加载视频，等待完全缓冲...');
   });
 </script>
